@@ -1,10 +1,8 @@
 package com.wmh;
 import org.encog.Encog;
 import org.encog.engine.network.activation.ActivationSigmoid;
-import org.encog.ml.data.MLData;
-import org.encog.ml.data.MLDataPair;
-import org.encog.ml.data.MLDataSet;
-import org.encog.ml.data.basic.BasicMLDataSet;
+import org.encog.neural.data.NeuralData;
+import org.encog.neural.data.NeuralDataPair;
 import org.encog.neural.data.NeuralDataSet;
 import org.encog.neural.data.basic.BasicNeuralDataSet;
 import org.encog.neural.networks.BasicNetwork;
@@ -14,7 +12,6 @@ import org.encog.neural.networks.training.competitive.neighborhood.NeighborhoodF
 import org.encog.neural.networks.training.competitive.neighborhood.NeighborhoodSingle;
 import org.encog.neural.networks.training.hebbian.HebbianTraining;
 import org.encog.neural.networks.training.propagation.back.Backpropagation;
-import org.encog.neural.networks.training.propagation.resilient.ResilientPropagation;
 
 public class Main {
 
@@ -44,38 +41,68 @@ public class Main {
             network.reset();
 
             // create training data
-            MLDataSet trainingSet = new BasicMLDataSet(XOR_INPUT, XOR_IDEAL);
+           // MLDataSet trainingSet = new BasicMLDataSet(XOR_INPUT, XOR_IDEAL);
             NeuralDataSet dataSet = new BasicNeuralDataSet(XOR_INPUT, XOR_IDEAL);
 
-            // train the neural network
-            final ResilientPropagation train = new ResilientPropagation(network, trainingSet);
+            // backpropagation the neural network
+            //final ResilientPropagation backpropagation = new ResilientPropagation(network, trainingSet);
 
             //back propagation
-            final Backpropagation backpropagation = new Backpropagation(network, trainingSet);
-
-            //hebbian training
-            final HebbianTraining hebbianTraining = new HebbianTraining(network, dataSet, true, 0.01);
-
-            //WTA
-            NeighborhoodFunction neighborhoodFunction = new NeighborhoodSingle();
-            final CompetitiveTraining competitiveTraining = new CompetitiveTraining(network,0.01,  dataSet, neighborhoodFunction);
-
+            final Backpropagation backpropagation = new Backpropagation(network, dataSet);
             int epoch = 1;
-
+            //ONE
             do {
-                train.iteration();
-                System.out.println("Epoch #" + epoch + " Error:" + train.getError());
+                backpropagation.iteration();
+                System.out.println("Epoch #" + epoch + " Error:" + backpropagation.getError());
                 epoch++;
-            } while (train.getError() > 0.01);
-            train.finishTraining();
+            } while (backpropagation.getError() > 0.01);
+            backpropagation.finishTraining();
 
             // test the neural network
             System.out.println("Neural Network Results:");
-            for (MLDataPair pair : trainingSet) {
-                final MLData output = network.compute(pair.getInput());
+            for (NeuralDataPair pair : dataSet) {
+                final NeuralData output = network.compute(pair.getInput());
                 System.out.println(pair.getInput().getData(0) + "," + pair.getInput().getData(1)
                         + ", actual=" + output.getData(0) + ",ideal=" + pair.getIdeal().getData(0));
             }
+            network.reset();
+            //TWO
+            //hebbian training
+            final HebbianTraining hebbianTraining = new HebbianTraining(network, dataSet, false, 0.01);
+            do {
+                hebbianTraining.iteration();
+                System.out.println("Epoch #" + epoch + " Error:" + hebbianTraining.getError());
+                epoch++;
+            } while (hebbianTraining.getError() > 0.01);
+            hebbianTraining.finishTraining();
+
+            // test the neural network
+            System.out.println("Neural Network Results:");
+            for (NeuralDataPair pair : dataSet) {
+                final NeuralData output = network.compute(pair.getInput());
+                System.out.println(pair.getInput().getData(0) + "," + pair.getInput().getData(1)
+                        + ", actual=" + output.getData(0) + ",ideal=" + pair.getIdeal().getData(0));
+            }
+            network.reset();
+            //THREE
+            //WTA
+            NeighborhoodFunction neighborhoodFunction = new NeighborhoodSingle();
+            final CompetitiveTraining competitiveTraining = new CompetitiveTraining(network,0.01,  dataSet, neighborhoodFunction);
+            do {
+                backpropagation.iteration();
+                System.out.println("Epoch #" + epoch + " Error:" + backpropagation.getError());
+                epoch++;
+            } while (backpropagation.getError() > 0.01);
+            backpropagation.finishTraining();
+
+            // test the neural network
+            System.out.println("Neural Network Results:");
+            for (NeuralDataPair pair : dataSet) {
+                final NeuralData output = network.compute(pair.getInput());
+                System.out.println(pair.getInput().getData(0) + "," + pair.getInput().getData(1)
+                        + ", actual=" + output.getData(0) + ",ideal=" + pair.getIdeal().getData(0));
+            }
+
 
             Encog.getInstance().shutdown();
         }
