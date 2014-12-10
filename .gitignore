@@ -19,6 +19,7 @@ local.properties
 out/
 lib/
 *.iml
+META-INF/
 
 # External tool builders
 .externalToolBuilders/
