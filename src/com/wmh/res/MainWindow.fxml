@@ -16,7 +16,10 @@
                         <ChoiceBox prefHeight="25.0" prefWidth="150.0" fx:id="functions"/>
 
                         <TextField  promptText="setRadius" fx:id="ratioValue"/>
-                        <Button mnemonicParsing="false" text="Start" fx:id="bStart"/>
+                         <ToolBar>
+                            <Button mnemonicParsing="false" text="Start" fx:id="bStart"/>
+                            <Button mnemonicParsing="false" text="Stop" fx:id="bStop"/>
+                         </ToolBar>
                      </children>
                   </VBox>
                </children>

@@ -11,16 +11,7 @@ import java.io.IOException;
 public class Main extends Application{
 
     MainWindowController mainWindowController = new MainWindowController();
-/**
- * The input necessary for XOR.
- */
-        public static double XOR_INPUT[][] = { { 0.0, 0.0 }, { 1.0, 0.0 },
-                { 0.0, 1.0 }, { 1.0, 1.0 } };
 
-        /**
-         * The ideal data necessary for XOR.
-         */
-        public static double XOR_IDEAL[][] = { { 0.0 }, { 1.0 }, { 1.0 }, { 0.0 } };
     @Override
     public void start(Stage stage) throws Exception {
 
