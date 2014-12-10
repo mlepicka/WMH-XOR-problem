@@ -5,7 +5,7 @@
 <?import javafx.scene.layout.*?>
 
 
-<fx:root type="javafx.scene.layout.VBox" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.wmh.MainWindowController">
+<fx:root type="javafx.scene.layout.VBox" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="800.0" prefWidth="1200.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.wmh.MainWindowController">
    <children>
       <SplitPane dividerPositions="0.29797979797979796" layoutX="3.0" layoutY="4.0" prefHeight="394.0" prefWidth="594.0">
         <items>
@@ -13,9 +13,10 @@
                <children>
                   <VBox prefHeight="392.0" prefWidth="173.0">
                      <children>
-                        <ChoiceBox prefHeight="25.0" prefWidth="150.0" />
-                        <TextField />
-                        <Button mnemonicParsing="false" text="Button" />
+                        <ChoiceBox prefHeight="25.0" prefWidth="150.0" fx:id="functions"/>
+
+                        <TextField  promptText="setRadius" fx:id="ratioValue"/>
+                        <Button mnemonicParsing="false" text="Start" fx:id="bStart"/>
                      </children>
                   </VBox>
                </children>
@@ -26,8 +27,8 @@
                     <items>
                         <TabPane prefHeight="200.0" prefWidth="200.0" tabClosingPolicy="UNAVAILABLE">
                           <tabs>
-                            <Tab text="Untitled Tab 1" />
-                            <Tab text="Untitled Tab 2" />
+                            <Tab text="Learning error" />
+                            <Tab text="Other" />
                           </tabs>
                         </TabPane>
                       <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="131.0" prefWidth="411.0" />
