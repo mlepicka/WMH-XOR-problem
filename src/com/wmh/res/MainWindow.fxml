@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import java.lang.*?>
+<?import javafx.scene.layout.*?>
+
+
+<fx:root type="javafx.scene.layout.VBox" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.wmh.MainWindowController">
+   <children>
+      <SplitPane dividerPositions="0.29797979797979796" layoutX="3.0" layoutY="4.0" prefHeight="394.0" prefWidth="594.0">
+        <items>
+          <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="160.0" prefWidth="100.0">
+               <children>
+                  <VBox prefHeight="392.0" prefWidth="173.0">
+                     <children>
+                        <ChoiceBox prefHeight="25.0" prefWidth="150.0" />
+                        <TextField />
+                        <Button mnemonicParsing="false" text="Button" />
+                     </children>
+                  </VBox>
+               </children>
+            </AnchorPane>
+          <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="160.0" prefWidth="100.0">
+               <children>
+                  <SplitPane dividerPositions="0.5, 0.5" layoutX="-4.0" layoutY="-3.0" orientation="VERTICAL" prefHeight="392.0" prefWidth="413.0">
+                    <items>
+                        <TabPane prefHeight="200.0" prefWidth="200.0" tabClosingPolicy="UNAVAILABLE">
+                          <tabs>
+                            <Tab text="Untitled Tab 1" />
+                            <Tab text="Untitled Tab 2" />
+                          </tabs>
+                        </TabPane>
+                      <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="131.0" prefWidth="411.0" />
+                      <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="101.0" prefWidth="411.0" />
+                    </items>
+                  </SplitPane>
+               </children>
+            </AnchorPane>
+        </items>
+      </SplitPane>
+   </children>
+</fx:root>
