@@ -1,7 +1,9 @@
 package com.wmh;
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
+import javafx.beans.value.ObservableListValue;
 import javafx.collections.FXCollections;
+import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
@@ -57,44 +59,45 @@ public class MainWindowController extends VBox implements Initializable{
     */
    public static double XOR_IDEAL[][] = { { 0.0 }, { 1.0 }, { 1.0 }, { 0.0 } };
 
-   private ObservableList<String> functionList = FXCollections.emptyObservableList();
-   private ArrayList<String> functionValueList = new ArrayList<String>();
    private Task currentTask;
    private ObservableList<XYChart.Series> chartData = FXCollections.emptyObservableList();
    private ArrayList<XYChart.Series> errorSeries = new ArrayList<>();
    private ObservableList<XYChart.Data> observableErrorData = FXCollections.emptyObservableList();
    private ArrayList<XYChart.Data> errorData = new ArrayList<>();
+
    public MainWindowController(){}
 
    @Override
    public void initialize(URL location, ResourceBundle resources) {
-      functionValueList.addAll(Arrays.asList("BackPropagation", "HebbianTraining", "CompetitiveTraining"));
-      functionList = FXCollections.observableArrayList(functionValueList);
-      functions.setItems(functionList);
-      functions.getSelectionModel().select(0); //default value
+
       chartData = FXCollections.observableArrayList(errorSeries);
       Bindings.bindContent(errorSeries, chartData);
       Bindings.bindContent(errorData, observableErrorData);
-      ;
-
-
+      errorChart.setCreateSymbols(false);
+      BasicNetwork network = new BasicNetwork();
+      functions.setItems(FXCollections.observableArrayList(Arrays.asList("BackPropagation", "HebbianTraining", "CompetitiveTraining")));
+      dimension.setItems(FXCollections.observableArrayList(Arrays.asList(2,3,4,5,6,7,8,9)));
+      layers.setItems(FXCollections.observableArrayList(Arrays.asList(2,3,4)));
+      functions.getSelectionModel().select(0); //default value
+      dimension.getSelectionModel().select(0);
+      layers.getSelectionModel().select(0);
       bStart.setOnAction(event -> {
-         BasicNetwork network = new BasicNetwork();
+         //TODO
+         //dynamic creating of data set for other dimension?
+         NeuralDataSet dataSet = new BasicNeuralDataSet(XOR_INPUT, XOR_IDEAL);
          network.addLayer(new BasicLayer(null, true, 2));
          network.addLayer(new BasicLayer(new ActivationSigmoid(), true, 3));
          network.addLayer(new BasicLayer(new ActivationSigmoid(), false, 1));
          network.getStructure().finalizeStructure();
          network.reset();
 
-         // create training data
-         // MLDataSet trainingSet = new BasicMLDataSet(XOR_INPUT, XOR_IDEAL);
-         NeuralDataSet dataSet = new BasicNeuralDataSet(XOR_INPUT, XOR_IDEAL);
          final int[] epoch = {1};
          if (functions.getSelectionModel().getSelectedItem().equals("BackPropagation")) {
             //back propagation
             network.reset();
             final Backpropagation backpropagation = new Backpropagation(network, dataSet);
             textFlow.getChildren().clear();
+
             Thread thread = new Thread(
                     currentTask = new Task() {
                        @Override
@@ -103,38 +106,19 @@ public class MainWindowController extends VBox implements Initializable{
                           do {
                              if (!this.isCancelled()) {
                                 backpropagation.iteration();
-                                errorData.add(new XYChart.Data((Double)backpropagation.getError(),epoch[0]));
+                                errorData.add(new XYChart.Data<>(epoch[0],backpropagation.getError()));
                                 System.out.println("Epoch #" + epoch[0] + " Error:" + backpropagation.getError());
                                 epoch[0]++;
-
                              }
                           } while (backpropagation.getError() > 0.01);
                           backpropagation.finishTraining();
-                          System.out.println(errorData.size());
-                          observableErrorData = FXCollections.observableArrayList(errorData);
-                          System.out.println(observableErrorData.size());
-                          System.out.println(errorSeries.size());
                           return null;
                        }
                     });
-
             thread.setDaemon(true);
             thread.start();
 
-            currentTask.setOnSucceeded(ev -> {
-               // test the neural network
-               System.out.println("Neural Network Results:");
-               for (NeuralDataPair pair : dataSet) {
-                  final NeuralData output = network.compute(pair.getInput());
-                  Text result = new Text("\t" + pair.getInput().getData(0) + "," + pair.getInput().getData(1)
-                          + ",\n  actual=" + output.getData(0) + ",\t ideal=" + pair.getIdeal().getData(0));
-                  textFlow.getChildren().add(result);
-               }
-               Platform.runLater(()->{errorSeries.add(new XYChart.Series("Error",observableErrorData));
-                  chartData=FXCollections.observableArrayList(errorSeries);
-               errorChart.setData(chartData);});
-               network.reset();
-            });
+
          } else if (functions.getSelectionModel().getSelectedItem().equals("HebbianTraining")) {
             //TWO
             //hebbian training
@@ -152,6 +136,7 @@ public class MainWindowController extends VBox implements Initializable{
                           do {
                              hebbianTraining.iteration();
                              System.out.println("Epoch #" + epoch[0] + " Error:" + hebbianTraining.getError());
+                             errorData.add(new XYChart.Data<>(epoch[0],hebbianTraining.getError()));
                              epoch[0]++;
                           } while (hebbianTraining.getError() > 0.01);
                           hebbianTraining.finishTraining();
@@ -161,17 +146,6 @@ public class MainWindowController extends VBox implements Initializable{
 
             thread.setDaemon(true);
             thread.start();
-            // test the neural network
-            currentTask.setOnSucceeded(ev -> {
-               System.out.println("Neural Network Results:");
-               for (NeuralDataPair pair : dataSet) {
-                  final NeuralData output = network.compute(pair.getInput());
-                  Text result = new Text("\t" + pair.getInput().getData(0) + "," + pair.getInput().getData(1)
-                          + ",\n actual=" + output.getData(0) + ",\tideal=" + pair.getIdeal().getData(0));
-                  textFlow.getChildren().add(result);
-               }
-               network.reset();
-            });
          } else if (functions.getSelectionModel().getSelectedItem().equals("CompetitiveTraining")) {
             //THREE
             //WTA
@@ -186,6 +160,7 @@ public class MainWindowController extends VBox implements Initializable{
                           do {
                              competitiveTraining.iteration();
                              System.out.println("Epoch #" + epoch[0] + " Error:" + competitiveTraining.getError());
+                             errorData.add(new XYChart.Data<>(epoch[0], competitiveTraining.getError()));
                              epoch[0]++;
                           } while (competitiveTraining.getError() > 0.01);
                           competitiveTraining.finishTraining();
@@ -195,20 +170,37 @@ public class MainWindowController extends VBox implements Initializable{
 
             thread.setDaemon(true);
             thread.start();
-            // test the neural network
-            currentTask.setOnSucceeded(ev -> {
-               System.out.println("Neural Network Results:");
-               for (NeuralDataPair pair : dataSet) {
-                  final NeuralData output = network.compute(pair.getInput());
-                  Text result = new Text("\t" + pair.getInput().getData(0) + "," + pair.getInput().getData(1)
-                          + ",\n actual=" + output.getData(0) + ",\tideal=" + pair.getIdeal().getData(0));
-                  textFlow.getChildren().add(result);
-               }
-               network.reset();
-            });
          }
+         currentTask.setOnSucceeded(ev -> {
+            // test the neural network
+            for (NeuralDataPair pair : dataSet) {
+               final NeuralData output = network.compute(pair.getInput());
+               Text result = new Text("\t" + pair.getInput().getData(0) + "," + pair.getInput().getData(1)
+                       + ",\n  actual=" + output.getData(0) + ",\t ideal=" + pair.getIdeal().getData(0));
+               textFlow.getChildren().add(result);
+            }
+            Task task;
+            Thread thread1 = new Thread(
+                    task = new Task<Object>() {
+                       @Override
+                       protected Object call() throws Exception {
+                          errorSeries.add(new XYChart.Series("Error",FXCollections.observableArrayList(errorData)));
+                          return null;
+                       }
+                    });
+            task.setOnSucceeded(eve->Platform.runLater(()->errorChart.setData(FXCollections.observableArrayList(errorSeries))));
+            task.setOnRunning(e->{
+               //TODO
+               //sth kind of progress bar or drawing chart in real time
+            });
+            thread1.setDaemon(true);
+            thread1.start();
+            network.reset();
+         });
+
          Encog.getInstance().shutdown();
       });
+
 
       bStop.setOnAction(event->{if(currentTask!=null)currentTask.cancel();});
    }
