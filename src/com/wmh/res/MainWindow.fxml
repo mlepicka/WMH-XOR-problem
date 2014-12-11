@@ -5,6 +5,7 @@
 <?import javafx.scene.layout.*?>
 
 
+<?import javafx.scene.text.TextFlow?>
 <fx:root type="javafx.scene.layout.VBox" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="800.0" prefWidth="1200.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.wmh.MainWindowController">
    <children>
       <SplitPane dividerPositions="0.29797979797979796" layoutX="3.0" layoutY="4.0" prefHeight="394.0" prefWidth="594.0">
@@ -34,8 +35,7 @@
                             <Tab text="Other" />
                           </tabs>
                         </TabPane>
-                      <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="131.0" prefWidth="411.0" />
-                      <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="101.0" prefWidth="411.0" />
+                        <TextFlow fx:id="textFlow" minHeight="0.0" minWidth="0.0" prefHeight="101.0" prefWidth="411.0" />
                     </items>
                   </SplitPane>
                </children>
