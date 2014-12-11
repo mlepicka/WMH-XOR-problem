@@ -1,12 +1,13 @@
 package com.wmh;
-import javafx.beans.property.ReadOnlyListWrapper;
-import javafx.beans.property.ReadOnlyStringWrapper;
+import javafx.application.Platform;
+import javafx.beans.binding.Bindings;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.concurrent.Task;
-import javafx.embed.swing.SwingFXUtils;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
+import javafx.scene.chart.LineChart;
+import javafx.scene.chart.XYChart;
 import javafx.scene.control.Button;
 import javafx.scene.control.ChoiceBox;
 import javafx.scene.control.TextField;
@@ -37,10 +38,14 @@ import java.util.*;
 public class MainWindowController extends VBox implements Initializable{
 
    @FXML ChoiceBox functions;
+   @FXML ChoiceBox dimension;
+   @FXML ChoiceBox layers;
+   @FXML TextField neuronNumbers;
    @FXML TextField ratioValue; //radius or learning ratio
    @FXML Button bStart;
    @FXML Button bStop;
    @FXML TextFlow textFlow;
+   @FXML LineChart errorChart;
    /**
     * The input necessary for XOR.
     */
@@ -55,7 +60,10 @@ public class MainWindowController extends VBox implements Initializable{
    private ObservableList<String> functionList = FXCollections.emptyObservableList();
    private ArrayList<String> functionValueList = new ArrayList<String>();
    private Task currentTask;
-
+   private ObservableList<XYChart.Series> chartData = FXCollections.emptyObservableList();
+   private ArrayList<XYChart.Series> errorSeries = new ArrayList<>();
+   private ObservableList<XYChart.Data> observableErrorData = FXCollections.emptyObservableList();
+   private ArrayList<XYChart.Data> errorData = new ArrayList<>();
    public MainWindowController(){}
 
    @Override
@@ -64,8 +72,13 @@ public class MainWindowController extends VBox implements Initializable{
       functionList = FXCollections.observableArrayList(functionValueList);
       functions.setItems(functionList);
       functions.getSelectionModel().select(0); //default value
+      chartData = FXCollections.observableArrayList(errorSeries);
+      Bindings.bindContent(errorSeries, chartData);
+      Bindings.bindContent(errorData, observableErrorData);
+      ;
 
-      bStart.setOnAction(event->{
+
+      bStart.setOnAction(event -> {
          BasicNetwork network = new BasicNetwork();
          network.addLayer(new BasicLayer(null, true, 2));
          network.addLayer(new BasicLayer(new ActivationSigmoid(), true, 3));
@@ -77,44 +90,52 @@ public class MainWindowController extends VBox implements Initializable{
          // MLDataSet trainingSet = new BasicMLDataSet(XOR_INPUT, XOR_IDEAL);
          NeuralDataSet dataSet = new BasicNeuralDataSet(XOR_INPUT, XOR_IDEAL);
          final int[] epoch = {1};
-         if(functions.getSelectionModel().getSelectedItem().equals("BackPropagation")){
-         //back propagation
+         if (functions.getSelectionModel().getSelectedItem().equals("BackPropagation")) {
+            //back propagation
             network.reset();
             final Backpropagation backpropagation = new Backpropagation(network, dataSet);
             textFlow.getChildren().clear();
             Thread thread = new Thread(
-               currentTask=new Task() {
-                  @Override
-                  protected Object call ()throws Exception {
-                     //ONE
-                     do {
-                        if (!this.isCancelled()) {
-                           backpropagation.iteration();
-                           System.out.println("Epoch #" + epoch[0] + " Error:" + backpropagation.getError());
-                           epoch[0]++;
-                        }
-                     } while (backpropagation.getError() > 0.01);
-                     backpropagation.finishTraining();
-                     return null;
-                  }
-               });
+                    currentTask = new Task() {
+                       @Override
+                       protected Object call() throws Exception {
+                          //ONE
+                          do {
+                             if (!this.isCancelled()) {
+                                backpropagation.iteration();
+                                errorData.add(new XYChart.Data((Double)backpropagation.getError(),epoch[0]));
+                                System.out.println("Epoch #" + epoch[0] + " Error:" + backpropagation.getError());
+                                epoch[0]++;
+
+                             }
+                          } while (backpropagation.getError() > 0.01);
+                          backpropagation.finishTraining();
+                          System.out.println(errorData.size());
+                          observableErrorData = FXCollections.observableArrayList(errorData);
+                          System.out.println(observableErrorData.size());
+                          System.out.println(errorSeries.size());
+                          return null;
+                       }
+                    });
 
             thread.setDaemon(true);
             thread.start();
 
-            currentTask.setOnSucceeded(ev->{
+            currentTask.setOnSucceeded(ev -> {
                // test the neural network
                System.out.println("Neural Network Results:");
                for (NeuralDataPair pair : dataSet) {
                   final NeuralData output = network.compute(pair.getInput());
-                  Text result = new Text("\t"+pair.getInput().getData(0) + "," + pair.getInput().getData(1)
+                  Text result = new Text("\t" + pair.getInput().getData(0) + "," + pair.getInput().getData(1)
                           + ",\n  actual=" + output.getData(0) + ",\t ideal=" + pair.getIdeal().getData(0));
                   textFlow.getChildren().add(result);
                }
+               Platform.runLater(()->{errorSeries.add(new XYChart.Series("Error",observableErrorData));
+                  chartData=FXCollections.observableArrayList(errorSeries);
+               errorChart.setData(chartData);});
                network.reset();
             });
-         }
-         else if(functions.getSelectionModel().getSelectedItem().equals("HebbianTraining")){
+         } else if (functions.getSelectionModel().getSelectedItem().equals("HebbianTraining")) {
             //TWO
             //hebbian training
             /**
@@ -125,15 +146,15 @@ public class MainWindowController extends VBox implements Initializable{
 
             textFlow.getChildren().clear();
             Thread thread = new Thread(
-                    currentTask=new Task() {
+                    currentTask = new Task() {
                        @Override
-                       protected Object call ()throws Exception {
-                           do {
-                              hebbianTraining.iteration();
-                              System.out.println("Epoch #" + epoch[0] + " Error:" + hebbianTraining.getError());
-                              epoch[0]++;
-                           } while (hebbianTraining.getError() > 0.01);
-                           hebbianTraining.finishTraining();
+                       protected Object call() throws Exception {
+                          do {
+                             hebbianTraining.iteration();
+                             System.out.println("Epoch #" + epoch[0] + " Error:" + hebbianTraining.getError());
+                             epoch[0]++;
+                          } while (hebbianTraining.getError() > 0.01);
+                          hebbianTraining.finishTraining();
                           return null;
                        }
                     });
@@ -151,24 +172,23 @@ public class MainWindowController extends VBox implements Initializable{
                }
                network.reset();
             });
-         }
-         else if(functions.getSelectionModel().getSelectedItem().equals("CompetitiveTraining")) {
+         } else if (functions.getSelectionModel().getSelectedItem().equals("CompetitiveTraining")) {
             //THREE
             //WTA
             NeighborhoodFunction neighborhoodFunction = new NeighborhoodSingle();
             network.reset();
-            final CompetitiveTraining competitiveTraining = new CompetitiveTraining(network, 1.0,  dataSet, neighborhoodFunction);
+            final CompetitiveTraining competitiveTraining = new CompetitiveTraining(network, 1.0, dataSet, neighborhoodFunction);
             textFlow.getChildren().clear();
             Thread thread = new Thread(
-                    currentTask=new Task() {
+                    currentTask = new Task() {
                        @Override
-                       protected Object call ()throws Exception {
-                           do {
-                              competitiveTraining.iteration();
-                              System.out.println("Epoch #" + epoch[0] + " Error:" + competitiveTraining.getError());
-                              epoch[0]++;
-                           } while (competitiveTraining.getError() > 0.01);
-                           competitiveTraining.finishTraining();
+                       protected Object call() throws Exception {
+                          do {
+                             competitiveTraining.iteration();
+                             System.out.println("Epoch #" + epoch[0] + " Error:" + competitiveTraining.getError());
+                             epoch[0]++;
+                          } while (competitiveTraining.getError() > 0.01);
+                          competitiveTraining.finishTraining();
                           return null;
                        }
                     });

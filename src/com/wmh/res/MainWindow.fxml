@@ -20,7 +20,7 @@
                   <Label text="Number of layers in neural network:" />
                   <ChoiceBox fx:id="layers" prefHeight="38.0" prefWidth="234.0" />
                   <Label text="Number of neurons in layers:" />
-                  <TextField prefHeight="34.0" prefWidth="234.0" promptText="number of neurons ex. 1,3,1" />
+                  <TextField prefHeight="34.0" prefWidth="234.0" promptText="number of neurons ex. 1,3,1" fx:id="neuronNumbers"/>
                   <Label text="Learning ratio:" />
                   <TextField fx:id="ratioValue" prefHeight="38.0" prefWidth="234.0" promptText="setRadius" />
                    <ToolBar>
@@ -37,9 +37,9 @@
                     <tabs>
                       <Tab text="Learning error chart">
                            <content>
-                              <LineChart>
+                              <LineChart fx:id="errorChart">
                                 <xAxis>
-                                  <CategoryAxis side="BOTTOM" />
+                                  <NumberAxis side="BOTTOM" />
                                 </xAxis>
                                 <yAxis>
                                   <NumberAxis side="LEFT" />
