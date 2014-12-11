@@ -182,32 +182,32 @@ public class MainWindowController extends VBox implements Initializable{
             progressBar.progressProperty().unbind();
             labelProgress.setText("Network trained.");
             // test the neural network
-
+            for (NeuralDataPair pair : finalDataSet) {
+               final NeuralData output = network.compute(pair.getInput());
+               Text result = new Text("\t" + pair.getInput().getData(0) + "," + pair.getInput().getData(1)
+                       + ",\n  actual=" + output.getData(0) + ",\t ideal=" + pair.getIdeal().getData(0));
+               textFlow.getChildren().add(result);
+            }
             Task task;
             Thread thread1 = new Thread(
                     task = new Task<Object>() {
                        @Override
                        protected Object call() throws Exception {
-                          for (NeuralDataPair pair : finalDataSet) {
-                             final NeuralData output = network.compute(pair.getInput());
-                             Text result = new Text("\t" + pair.getInput().getData(0) + "," + pair.getInput().getData(1)
-                                     + ",\n  actual=" + output.getData(0) + ",\t ideal=" + pair.getIdeal().getData(0));
-                             textFlow.getChildren().add(result);
-                          }
                           errorSeries.add(new XYChart.Series("Error", FXCollections.observableArrayList(errorData)));
                           return null;
                        }
                     });
-            task.setOnSucceeded(eve -> Platform.runLater(() -> {
+            task.setOnSucceeded(eve -> {
                errorChart.setData(FXCollections.observableArrayList(errorSeries));
                labelProgress.setText("Nothing in progress");
                progressBar.progressProperty().unbind();
-            }));
+               progressBar.progressProperty().setValue(0.0);
+            });
             task.setOnRunning(e -> {
                //TODO
                //sth kind of progress bar or drawing chart in real time
                progressBar.progressProperty().bind(task.progressProperty());
-               labelProgress.setText("Testing network and generating chart...");
+               labelProgress.setText("Generating chart ...");
             });
 
             thread1.setDaemon(true);
@@ -222,6 +222,8 @@ public class MainWindowController extends VBox implements Initializable{
          Encog.getInstance().shutdown();
       });
 
-      bStop.setOnAction(event->{if(currentTask!=null)currentTask.cancel();});
+      bStop.setOnAction(event -> {
+         if (currentTask != null) currentTask.cancel();
+      });
    }
 }
