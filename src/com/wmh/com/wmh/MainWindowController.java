@@ -10,9 +10,7 @@ import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.chart.LineChart;
 import javafx.scene.chart.XYChart;
-import javafx.scene.control.Button;
-import javafx.scene.control.ChoiceBox;
-import javafx.scene.control.TextField;
+import javafx.scene.control.*;
 import javafx.scene.layout.VBox;
 import javafx.scene.text.Text;
 import javafx.scene.text.TextFlow;
@@ -29,6 +27,7 @@ import org.encog.neural.networks.training.competitive.neighborhood.NeighborhoodF
 import org.encog.neural.networks.training.competitive.neighborhood.NeighborhoodSingle;
 import org.encog.neural.networks.training.hebbian.HebbianTraining;
 import org.encog.neural.networks.training.propagation.back.Backpropagation;
+import sun.java2d.loops.XORComposite;
 
 import java.net.URL;
 import java.util.*;
@@ -48,16 +47,8 @@ public class MainWindowController extends VBox implements Initializable{
    @FXML Button bStop;
    @FXML TextFlow textFlow;
    @FXML LineChart errorChart;
-   /**
-    * The input necessary for XOR.
-    */
-   public static double XOR_INPUT[][] = { { 0.0, 0.0 }, { 1.0, 0.0 },
-           { 0.0, 1.0 }, { 1.0, 1.0 } };
-
-   /**
-    * The ideal data necessary for XOR.
-    */
-   public static double XOR_IDEAL[][] = { { 0.0 }, { 1.0 }, { 1.0 }, { 0.0 } };
+   @FXML ProgressBar progressBar;
+   @FXML Label labelProgress;
 
    private Task currentTask;
    private ObservableList<XYChart.Series> chartData = FXCollections.emptyObservableList();
@@ -69,7 +60,7 @@ public class MainWindowController extends VBox implements Initializable{
 
    @Override
    public void initialize(URL location, ResourceBundle resources) {
-
+      //chartProgress.
       chartData = FXCollections.observableArrayList(errorSeries);
       Bindings.bindContent(errorSeries, chartData);
       Bindings.bindContent(errorData, observableErrorData);
@@ -77,16 +68,39 @@ public class MainWindowController extends VBox implements Initializable{
       BasicNetwork network = new BasicNetwork();
       functions.setItems(FXCollections.observableArrayList(Arrays.asList("BackPropagation", "HebbianTraining", "CompetitiveTraining")));
       dimension.setItems(FXCollections.observableArrayList(Arrays.asList(2,3,4,5,6,7,8,9)));
-      layers.setItems(FXCollections.observableArrayList(Arrays.asList(2,3,4)));
+      layers.setItems(FXCollections.observableArrayList(Arrays.asList(1,2,3,4)));
       functions.getSelectionModel().select(0); //default value
       dimension.getSelectionModel().select(0);
       layers.getSelectionModel().select(0);
       bStart.setOnAction(event -> {
+         network.clearContext();
+         errorChart.getData().clear();
          //TODO
-         //dynamic creating of data set for other dimension?
-         NeuralDataSet dataSet = new BasicNeuralDataSet(XOR_INPUT, XOR_IDEAL);
-         network.addLayer(new BasicLayer(null, true, 2));
-         network.addLayer(new BasicLayer(new ActivationSigmoid(), true, 3));
+         //dynamic creating of data set for other dimensions
+         NeuralDataSet dataSet;
+
+         int actualDimension = (int)Math.pow(2,(Integer)dimension.getSelectionModel().getSelectedItem());
+
+         double XOR_STATIC[][] = new double[actualDimension][(Integer)dimension.getSelectionModel().getSelectedItem()];
+         double XOR_STATIC_IDEAL[][] = new double[actualDimension][1];
+         for(int i=0; i < actualDimension ; i++){
+            int xor=0;
+            for (int j=0; j < (Integer)dimension.getSelectionModel().getSelectedItem(); j++){
+               Random random = new Random();
+               Double value = random.nextDouble();
+               if(value<0.5) value=0.0;
+               else value = 1.0;
+               XOR_STATIC[i][j] = value;
+               if(j==0)xor=value.intValue();
+               if(j!=0)
+                  xor=xor^value.intValue();
+            }
+            XOR_STATIC_IDEAL[i][0] = xor;
+         }
+
+         dataSet = new BasicNeuralDataSet(XOR_STATIC, XOR_STATIC_IDEAL);
+         network.addLayer(new BasicLayer(null, true, (Integer)dimension.getSelectionModel().getSelectedItem()));
+         network.addLayer(new BasicLayer(new ActivationSigmoid(), true, (Integer)layers.getSelectionModel().getSelectedItem()));
          network.addLayer(new BasicLayer(new ActivationSigmoid(), false, 1));
          network.getStructure().finalizeStructure();
          network.reset();
@@ -97,37 +111,31 @@ public class MainWindowController extends VBox implements Initializable{
             network.reset();
             final Backpropagation backpropagation = new Backpropagation(network, dataSet);
             textFlow.getChildren().clear();
-
             Thread thread = new Thread(
                     currentTask = new Task() {
                        @Override
-                       protected Object call() throws Exception {
-                          //ONE
+                       protected Object call() throws Exception{
                           do {
                              if (!this.isCancelled()) {
                                 backpropagation.iteration();
                                 errorData.add(new XYChart.Data<>(epoch[0],backpropagation.getError()));
-                                System.out.println("Epoch #" + epoch[0] + " Error:" + backpropagation.getError());
+                                //System.out.println("Epoch #" + epoch[0] + " Error:" + backpropagation.getError());
                                 epoch[0]++;
                              }
-                          } while (backpropagation.getError() > 0.01);
+                          } while ((backpropagation.getError() > 0.01)&&epoch[0]<100000);
                           backpropagation.finishTraining();
                           return null;
                        }
                     });
             thread.setDaemon(true);
             thread.start();
-
-
          } else if (functions.getSelectionModel().getSelectedItem().equals("HebbianTraining")) {
-            //TWO
             //hebbian training
             /**
              * It's something wrong with hebbianTraining - the error is always 0.00 in 1 iteration which isn't true at all
              */
             network.reset();
             final HebbianTraining hebbianTraining = new HebbianTraining(network, dataSet, false, 3.00);
-
             textFlow.getChildren().clear();
             Thread thread = new Thread(
                     currentTask = new Task() {
@@ -143,11 +151,9 @@ public class MainWindowController extends VBox implements Initializable{
                           return null;
                        }
                     });
-
             thread.setDaemon(true);
             thread.start();
          } else if (functions.getSelectionModel().getSelectedItem().equals("CompetitiveTraining")) {
-            //THREE
             //WTA
             NeighborhoodFunction neighborhoodFunction = new NeighborhoodSingle();
             network.reset();
@@ -167,40 +173,54 @@ public class MainWindowController extends VBox implements Initializable{
                           return null;
                        }
                     });
-
             thread.setDaemon(true);
             thread.start();
          }
+
+         final NeuralDataSet finalDataSet = dataSet;
          currentTask.setOnSucceeded(ev -> {
+            progressBar.progressProperty().unbind();
+            labelProgress.setText("Network trained.");
             // test the neural network
-            for (NeuralDataPair pair : dataSet) {
-               final NeuralData output = network.compute(pair.getInput());
-               Text result = new Text("\t" + pair.getInput().getData(0) + "," + pair.getInput().getData(1)
-                       + ",\n  actual=" + output.getData(0) + ",\t ideal=" + pair.getIdeal().getData(0));
-               textFlow.getChildren().add(result);
-            }
+
             Task task;
             Thread thread1 = new Thread(
                     task = new Task<Object>() {
                        @Override
                        protected Object call() throws Exception {
-                          errorSeries.add(new XYChart.Series("Error",FXCollections.observableArrayList(errorData)));
+                          for (NeuralDataPair pair : finalDataSet) {
+                             final NeuralData output = network.compute(pair.getInput());
+                             Text result = new Text("\t" + pair.getInput().getData(0) + "," + pair.getInput().getData(1)
+                                     + ",\n  actual=" + output.getData(0) + ",\t ideal=" + pair.getIdeal().getData(0));
+                             textFlow.getChildren().add(result);
+                          }
+                          errorSeries.add(new XYChart.Series("Error", FXCollections.observableArrayList(errorData)));
                           return null;
                        }
                     });
-            task.setOnSucceeded(eve->Platform.runLater(()->errorChart.setData(FXCollections.observableArrayList(errorSeries))));
-            task.setOnRunning(e->{
+            task.setOnSucceeded(eve -> Platform.runLater(() -> {
+               errorChart.setData(FXCollections.observableArrayList(errorSeries));
+               labelProgress.setText("Nothing in progress");
+               progressBar.progressProperty().unbind();
+            }));
+            task.setOnRunning(e -> {
                //TODO
                //sth kind of progress bar or drawing chart in real time
+               progressBar.progressProperty().bind(task.progressProperty());
+               labelProgress.setText("Testing network and generating chart...");
             });
+
             thread1.setDaemon(true);
             thread1.start();
             network.reset();
          });
+         currentTask.setOnRunning(e->{
+            progressBar.progressProperty().bind(currentTask.progressProperty());
+            labelProgress.setText("Generating network and training...");
+         });
 
          Encog.getInstance().shutdown();
       });
-
 
       bStop.setOnAction(event->{if(currentTask!=null)currentTask.cancel();});
    }

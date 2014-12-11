@@ -11,18 +11,20 @@
    <children>
       <SplitPane dividerPositions="0.29797979797979796" layoutX="3.0" layoutY="4.0" prefHeight="1000.0" prefWidth="1000.0">
         <items>
-            <VBox prefHeight="392.0" prefWidth="234.0" maxWidth="234.0">
+            <VBox maxWidth="234.0" prefHeight="392.0" prefWidth="234.0">
                <children>
                   <Label text="Learning method:" />
                   <ChoiceBox fx:id="functions" prefHeight="40.0" prefWidth="234.0" />
                   <Label text="Number of dimension of XOR problem:" />
                   <ChoiceBox fx:id="dimension" prefHeight="39.0" prefWidth="234.0" />
-                  <Label text="Number of layers in neural network:" />
+                  <Label text="Number of hidden layers in neural network:" />
                   <ChoiceBox fx:id="layers" prefHeight="38.0" prefWidth="234.0" />
                   <Label text="Number of neurons in layers:" />
-                  <TextField prefHeight="34.0" prefWidth="234.0" promptText="number of neurons ex. 1,3,1" fx:id="neuronNumbers"/>
+                  <TextField fx:id="neuronNumbers" prefHeight="34.0" prefWidth="234.0" promptText="number of neurons ex. 1,3,1" />
                   <Label text="Learning ratio:" />
                   <TextField fx:id="ratioValue" prefHeight="38.0" prefWidth="234.0" promptText="setRadius" />
+                  <Label text="Nothing in progress" fx:id="labelProgress"/>
+                  <ProgressBar fx:id="progressBar" prefHeight="18.0" prefWidth="237.0" progress="0.0" />
                    <ToolBar>
                       <items>
                          <Button fx:id="bStart" mnemonicParsing="false" prefHeight="38.0" prefWidth="105.0" text="Start" />
@@ -50,7 +52,11 @@
                       <Tab text="Other" />
                     </tabs>
                   </TabPane>
-                  <TextFlow fx:id="textFlow" minHeight="0.0" minWidth="0.0" prefHeight="101.0" prefWidth="411.0" />
+                  <ScrollPane prefHeight="200.0" prefWidth="200.0">
+                     <content>
+                        <TextFlow fx:id="textFlow" minHeight="0.0" minWidth="0.0" prefHeight="125.0" prefWidth="756.0" />
+                     </content>
+                  </ScrollPane>
               </items>
             </SplitPane>
         </items>
