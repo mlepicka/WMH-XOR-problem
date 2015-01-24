@@ -4,17 +4,15 @@ import javafx.collections.FXCollections;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
-import javafx.scene.Scene;
 import javafx.scene.chart.LineChart;
 import javafx.scene.chart.XYChart;
 import javafx.scene.control.*;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.control.TextField;
+import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
+import javafx.scene.paint.Paint;
+import javafx.scene.shape.Circle;
 import javafx.scene.text.Text;
 import javafx.scene.text.TextFlow;
-import javafx.stage.Modality;
 import javafx.stage.Stage;
 import org.controlsfx.dialog.Dialogs;
 import org.encog.Encog;
@@ -29,7 +27,6 @@ import org.encog.neural.networks.training.propagation.back.Backpropagation;
 
 import java.net.URL;
 import java.util.*;
-import java.util.List;
 
 
 /**
@@ -43,6 +40,7 @@ public class MainWindowController extends VBox implements Initializable{
    @FXML TextField momentum;
    @FXML TextField errorValue;
    @FXML TextField ratioValue; //radius or learning ratio
+   @FXML ScrollPane scrollpane;
    @FXML Button bStart;
    @FXML Button bStop;
    @FXML TextFlow textFlow;
@@ -50,11 +48,19 @@ public class MainWindowController extends VBox implements Initializable{
    @FXML ProgressBar progressBar;
    @FXML Label labelProgress;
    @FXML TextField maxIterations;
+   @FXML Tab structure;
+   @FXML Pane pane;
+   @FXML TableView testData;
+   @FXML Button generateData;
+   @FXML Button addRow;
+   @FXML Button startTest;
+
    int maxIteration;
    int iterationNr;
    double ratio;
    double moment;
    double error;
+   int[] neuronNumber=new int[]{1};
 
    private Task currentTask;
    private XYChart.Series errorSeries = new XYChart.Series();
@@ -75,12 +81,19 @@ public class MainWindowController extends VBox implements Initializable{
       dimension.getSelectionModel().select(0);
       layers.getSelectionModel().select(0);
       bStart.setOnAction(event -> {
+         pane.getChildren().clear();
          iterationNr=0;
          try {
             maxIteration = Integer.parseInt(maxIterations.getText());
             ratio = Double.parseDouble(ratioValue.getText());
             moment = Double.parseDouble(momentum.getText());
             error = Double.parseDouble(errorValue.getText());
+            if(neuronNumbers.getText()!=null && !neuronNumbers.getText().equals("")) {
+               String[] neurons = neuronNumbers.getText().split(",");
+               neuronNumber = new int[neurons.length];
+               for (int i = 0; i < neurons.length; i++)
+                  neuronNumber[i] = Integer.parseInt(neurons[i]);
+            }
          }
          catch(NumberFormatException ne){
             Dialogs.create().owner(new Stage()).title("Error was occured").masthead("Wrong parameter").message("One of the parameters has a wrong value!\n"+ne.getMessage()).showError();
@@ -116,8 +129,36 @@ public class MainWindowController extends VBox implements Initializable{
          //input layer
          network.addLayer(new BasicLayer(null, true, (Integer)dimension.getSelectionModel().getSelectedItem()));
          //change for loop and get numbers of neuron from textfield
-         for(int i=0; i< (Integer)layers.getSelectionModel().getSelectedItem(); i++)
-            network.addLayer(new BasicLayer(new ActivationSigmoid(), true, (Integer)layers.getSelectionModel().getSelectedItem()));
+         int size = (Integer)layers.getSelectionModel().getSelectedItem();
+
+         if(neuronNumber.length < size){
+            Dialogs.create().owner(new Stage()).title("Error was occured").masthead("Wrong parameters")
+                    .message("Please enter valid number of neuron for each of hidden layer\n"+
+                    "For example: 1,2,1 for 3 hidden layer").showError();
+            return;
+         }
+         Circle circle = new Circle();
+         Text text;
+
+
+         for(int i=0; i< size; i++) {
+            network.addLayer(new BasicLayer(new ActivationSigmoid(), true, neuronNumber[i]));
+            for(int j=0; j<neuronNumber[i]; j++) {
+               double X =pane.getLayoutX() + pane.getWidth()/(neuronNumber[i]+2)+j*50;
+               double Y = pane.getLayoutY()+ pane.getHeight()/size+i*50+50;
+               circle = new Circle(X, Y, 10);
+               circle.fillProperty().setValue(Paint.valueOf("white"));
+               text = new Text(""+j);
+               text.setX(X-3);
+               text.setY(Y + 3);
+               pane.getChildren().add(circle);
+               pane.getChildren().add(text);
+
+              // network.getStructure().getFlat()
+            }
+         }
+
+
          //output layer
          network.addLayer(new BasicLayer(new ActivationSigmoid(), false, 1));
          network.getStructure().finalizeStructure();
@@ -162,7 +203,7 @@ public class MainWindowController extends VBox implements Initializable{
                Text result = new Text( "Input array: "+Arrays.toString(input)
                        + ",\t  actual=" + output.getData(0) + ",\t ideal=" + pair.getIdeal().getData(0)+"\n");
 
-               textFlow.getChildren().add(result);
+               Platform.runLater(() -> textFlow.getChildren().add(result));
             }
          });
          currentTask.setOnRunning(e -> {

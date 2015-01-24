@@ -29,7 +29,7 @@
                    <TextField fx:id="momentum" prefHeight="38.0" prefWidth="234.0" text="0.0" />
                    <Label text="Error stop value:" />
                    <TextField fx:id="errorValue" prefHeight="38.0" prefWidth="234.0" text="0.01" />
-                  <Label text="Nothing in progress" fx:id="labelProgress"/>
+                  <Label fx:id="labelProgress" text="Nothing in progress" />
                   <ProgressBar fx:id="progressBar" prefHeight="18.0" prefWidth="237.0" progress="0.0" />
                    <ToolBar>
                       <items>
@@ -55,12 +55,36 @@
                               </LineChart>
                            </content>
                         </Tab>
-                      <Tab text="Other" />
+                      <Tab fx:id="structure" text="Structure">
+                           <content>
+                              <Pane fx:id="pane" prefHeight="200.0" prefWidth="200.0" />
+                           </content>
+                      </Tab>
+                        <Tab text="Test network">
+                            <ScrollPane prefHeight="20.0" prefWidth="20.0">
+                            <content>
+                                <Pane fx:id="testPane" >
+                                 <children>
+                                    <TableView fx:id="testData" layoutX="14.0" layoutY="16.0" prefHeight="421.0" prefWidth="519.0">
+                                      <columns>
+                                        <TableColumn prefWidth="75.0" text="C1" />
+                                        <TableColumn prefWidth="75.0" text="C2" />
+                                      </columns>
+                                    </TableView>
+                                     <Button fx:id="addRow" layoutX="560.0" layoutY="55.0" mnemonicParsing="false" prefHeight="38.0" prefWidth="105.0" text="Add row" />
+                                     <Button fx:id="startTest" layoutX="560.0" layoutY="132.0" mnemonicParsing="false" prefHeight="38.0" prefWidth="105.0" text="Start test" />
+                                     <Button fx:id="generateData" layoutX="560.0" layoutY="94.0" mnemonicParsing="false" prefHeight="38.0" prefWidth="105.0" text="Generate data" />
+
+                                 </children>
+                                </Pane>
+                            </content>
+                            </ScrollPane>
+                        </Tab>
                     </tabs>
                   </TabPane>
-                  <ScrollPane prefHeight="200.0" prefWidth="200.0">
+                  <ScrollPane fx:id="scrollpane" prefHeight="20.0" prefWidth="20.0">
                      <content>
-                        <TextFlow fx:id="textFlow" minHeight="0.0" minWidth="0.0" prefHeight="125.0" prefWidth="756.0" />
+                        <TextFlow fx:id="textFlow" maxHeight="12500.0" minHeight="0.0" minWidth="0.0" />
                      </content>
                   </ScrollPane>
               </items>
