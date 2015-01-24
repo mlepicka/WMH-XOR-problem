@@ -22,7 +22,13 @@
                   <Label text="Number of neurons in layers:" />
                   <TextField fx:id="neuronNumbers" prefHeight="34.0" prefWidth="234.0" promptText="number of neurons ex. 1,3,1" />
                   <Label text="Learning ratio:" />
-                  <TextField fx:id="ratioValue" prefHeight="38.0" prefWidth="234.0" promptText="setRadius" />
+                  <TextField fx:id="ratioValue" prefHeight="38.0" prefWidth="234.0" text="0.25" />
+                   <Label text="Max iterations:" />
+                   <TextField fx:id="maxIterations" prefHeight="38.0" prefWidth="234.0" text="1000" />
+                   <Label text="Momentum:" />
+                   <TextField fx:id="momentum" prefHeight="38.0" prefWidth="234.0" text="0.0" />
+                   <Label text="Error stop value:" />
+                   <TextField fx:id="errorValue" prefHeight="38.0" prefWidth="234.0" text="0.01" />
                   <Label text="Nothing in progress" fx:id="labelProgress"/>
                   <ProgressBar fx:id="progressBar" prefHeight="18.0" prefWidth="237.0" progress="0.0" />
                    <ToolBar>

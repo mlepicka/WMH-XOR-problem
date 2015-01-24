@@ -1,19 +1,22 @@
 package com.wmh;
 import javafx.application.Platform;
-import javafx.beans.binding.Bindings;
-import javafx.beans.value.ObservableListValue;
 import javafx.collections.FXCollections;
-import javafx.collections.ListChangeListener;
-import javafx.collections.ObservableList;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
+import javafx.scene.Scene;
 import javafx.scene.chart.LineChart;
 import javafx.scene.chart.XYChart;
 import javafx.scene.control.*;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.control.TextField;
 import javafx.scene.layout.VBox;
 import javafx.scene.text.Text;
 import javafx.scene.text.TextFlow;
+import javafx.stage.Modality;
+import javafx.stage.Stage;
+import org.controlsfx.dialog.Dialogs;
 import org.encog.Encog;
 import org.encog.engine.network.activation.ActivationSigmoid;
 import org.encog.neural.data.NeuralData;
@@ -22,17 +25,11 @@ import org.encog.neural.data.NeuralDataSet;
 import org.encog.neural.data.basic.BasicNeuralDataSet;
 import org.encog.neural.networks.BasicNetwork;
 import org.encog.neural.networks.layers.BasicLayer;
-import org.encog.neural.networks.structure.NeuralStructure;
-import org.encog.neural.networks.training.competitive.CompetitiveTraining;
-import org.encog.neural.networks.training.competitive.neighborhood.NeighborhoodFunction;
-import org.encog.neural.networks.training.competitive.neighborhood.NeighborhoodSingle;
-import org.encog.neural.networks.training.hebbian.HebbianTraining;
 import org.encog.neural.networks.training.propagation.back.Backpropagation;
-import org.encog.util.simple.EncogUtility;
-import sun.java2d.loops.XORComposite;
 
 import java.net.URL;
 import java.util.*;
+import java.util.List;
 
 
 /**
@@ -43,6 +40,8 @@ public class MainWindowController extends VBox implements Initializable{
    @FXML ChoiceBox dimension;
    @FXML ChoiceBox layers;
    @FXML TextField neuronNumbers;
+   @FXML TextField momentum;
+   @FXML TextField errorValue;
    @FXML TextField ratioValue; //radius or learning ratio
    @FXML Button bStart;
    @FXML Button bStop;
@@ -50,8 +49,12 @@ public class MainWindowController extends VBox implements Initializable{
    @FXML LineChart errorChart;
    @FXML ProgressBar progressBar;
    @FXML Label labelProgress;
-   int iterationNr = 0;
-
+   @FXML TextField maxIterations;
+   int maxIteration;
+   int iterationNr;
+   double ratio;
+   double moment;
+   double error;
 
    private Task currentTask;
    private XYChart.Series errorSeries = new XYChart.Series();
@@ -62,6 +65,7 @@ public class MainWindowController extends VBox implements Initializable{
    public void initialize(URL location, ResourceBundle resources) {
       //chartProgress.
 
+
       errorChart.setCreateSymbols(false);
       BasicNetwork network = new BasicNetwork();
      // functions.setItems(FXCollections.observableArrayList(Arrays.asList("BackPropagation", "HebbianTraining", "CompetitiveTraining")));
@@ -71,6 +75,17 @@ public class MainWindowController extends VBox implements Initializable{
       dimension.getSelectionModel().select(0);
       layers.getSelectionModel().select(0);
       bStart.setOnAction(event -> {
+         iterationNr=0;
+         try {
+            maxIteration = Integer.parseInt(maxIterations.getText());
+            ratio = Double.parseDouble(ratioValue.getText());
+            moment = Double.parseDouble(momentum.getText());
+            error = Double.parseDouble(errorValue.getText());
+         }
+         catch(NumberFormatException ne){
+            Dialogs.create().owner(new Stage()).title("Error was occured").masthead("Wrong parameter").message("One of the parameters has a wrong value!\n"+ne.getMessage()).showError();
+            return;
+         }
 
          errorData.clear();
          network.clearContext();
@@ -111,9 +126,8 @@ public class MainWindowController extends VBox implements Initializable{
          errorSeries.setName("Error");
          errorChart.getData().add(errorSeries);
 
-
             network.reset();
-            final Backpropagation backpropagation = new Backpropagation(network, dataSet);
+            final Backpropagation backpropagation = new Backpropagation(network, dataSet, ratio, moment);
             textFlow.getChildren().clear();
             Thread thread = new Thread(
                     currentTask = new Task() {
@@ -128,7 +142,7 @@ public class MainWindowController extends VBox implements Initializable{
                                    iterationNr++;
                                 });
                              }
-                          } while ((backpropagation.getError() > 0.01)&&iterationNr<1000);
+                          } while ((backpropagation.getError() > error)&&iterationNr<maxIteration);
                           backpropagation.finishTraining();
                           return null;
                        }
