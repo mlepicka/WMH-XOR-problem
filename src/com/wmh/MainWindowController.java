@@ -80,27 +80,33 @@ public class MainWindowController extends VBox implements Initializable{
    private List<XYChart.Data> errorData = new LinkedList<>();
    public MainWindowController(){}
    int rowNr=1;
+   NeuralDataSet dataSet;
 
    @Override
    public void initialize(URL location, ResourceBundle resources) {
-      //chartProgress.
-
       errorChart.setCreateSymbols(false);
       BasicNetwork network = new BasicNetwork();
-     // functions.setItems(FXCollections.observableArrayList(Arrays.asList("BackPropagation", "HebbianTraining", "CompetitiveTraining")));
       dimension.setItems(FXCollections.observableArrayList(Arrays.asList(2,3,4,5,6,7,8,9)));
       layers.setItems(FXCollections.observableArrayList(Arrays.asList(1,2,3,4)));
-      //functions.getSelectionModel().select(0); //default value
       dimension.getSelectionModel().select(0);
       layers.getSelectionModel().select(0);
       testData.editableProperty().setValue(true);
       testData.getSelectionModel().cellSelectionEnabledProperty().setValue(true);
-      //Start button
+
+      //Start button action
       bStart.setOnAction(event -> {
+         //clearing variables
          testData.getColumns().clear();
          tableList.clear();
          pane.getChildren().clear();
+         errorData.clear();
+         network.clearContext();
+         errorChart.getData().clear();
+         errorSeries.getData().clear();
+         textFlow.getChildren().clear();
+
          iterationNr=0;
+
          try {
             maxIteration = Integer.parseInt(maxIterations.getText());
             ratio = Double.parseDouble(ratioValue.getText());
@@ -118,16 +124,12 @@ public class MainWindowController extends VBox implements Initializable{
             return;
          }
 
-         errorData.clear();
-         network.clearContext();
-         errorChart.getData().clear();
-         errorSeries.getData().clear();
-         NeuralDataSet dataSet;
-
          actualDimension = (int)Math.pow(2,(Integer)dimension.getSelectionModel().getSelectedItem());
          actualDimensionChosen = (Integer)dimension.getSelectionModel().getSelectedItem();
          double XOR_STATIC[][] = new double[actualDimension][actualDimensionChosen];
          double XOR_STATIC_IDEAL[][] = new double[actualDimension][1];
+
+         //generate XOR table
          for(int i=0; i < actualDimension ; i++){
             int xor=0;
             for (int j=0; j < actualDimensionChosen; j++){
@@ -145,7 +147,7 @@ public class MainWindowController extends VBox implements Initializable{
 
          dataSet = new BasicNeuralDataSet(XOR_STATIC, XOR_STATIC_IDEAL);
          //input layer
-         network.addLayer(new BasicLayer(null, true, (Integer)dimension.getSelectionModel().getSelectedItem()));
+         network.addLayer(new BasicLayer(null, true, actualDimensionChosen));
          //change for loop and get numbers of neuron from textfield
          int size = (Integer)layers.getSelectionModel().getSelectedItem();
 
@@ -155,27 +157,22 @@ public class MainWindowController extends VBox implements Initializable{
                     "For example: 1,2,1 for 3 hidden layer").showError();
             return;
          }
-         Circle circle = new Circle();
-         Text text;
 
-
+         //draw structure of neural network
          for(int i=0; i< size; i++) {
             network.addLayer(new BasicLayer(new ActivationSigmoid(), true, neuronNumber[i]));
             for(int j=0; j<neuronNumber[i]; j++) {
                double X =pane.getLayoutX() + pane.getWidth()/(neuronNumber[i]+2)+j*50;
                double Y = pane.getLayoutY()+ pane.getHeight()/size+i*50+50;
-               circle = new Circle(X, Y, 10);
+               Circle circle = new Circle(X, Y, 10);
                circle.fillProperty().setValue(Paint.valueOf("white"));
-               text = new Text(""+j);
+               Text text = new Text(""+j);
                text.setX(X-3);
                text.setY(Y + 3);
                pane.getChildren().add(circle);
                pane.getChildren().add(text);
-
-              // network.getStructure().getFlat()
             }
          }
-
 
          //output layer
          network.addLayer(new BasicLayer(new ActivationSigmoid(), false, 1));
@@ -185,44 +182,47 @@ public class MainWindowController extends VBox implements Initializable{
          errorSeries.setName("Error");
          errorChart.getData().add(errorSeries);
 
-            network.reset();
-            final Backpropagation backpropagation = new Backpropagation(network, dataSet, ratio, moment);
-            textFlow.getChildren().clear();
-            Thread thread = new Thread(
-                    currentTask = new Task() {
-                       @Override
-                       protected Object call() throws Exception{
-                          do {
-                             if (!this.isCancelled()) {
-                                backpropagation.iteration();
-                                Platform.runLater(()->{
-                                   errorData.add(new XYChart.Data<>(iterationNr,backpropagation.getError()));
-                                   errorSeries.getData().add(new XYChart.Data(iterationNr, backpropagation.getError()));
-                                   iterationNr++;
-                                });
-                             }
-                          } while ((backpropagation.getError() > error)&&iterationNr<maxIteration);
-                          backpropagation.finishTraining();
-                          return null;
-                       }
-                    });
-         thread.setDaemon(true);
-            thread.start();
+         //Back propagation learning
+         final Backpropagation backpropagation = new Backpropagation(network, dataSet, ratio, moment);
 
-         final NeuralDataSet finalDataSet = dataSet;
+         //Train and draw learning error chart
+         Thread thread = new Thread(
+                 currentTask = new Task() {
+                    @Override
+                    protected Object call() throws Exception{
+                       do {
+                          if (!this.isCancelled()) {
+                             backpropagation.iteration();
+                             Platform.runLater(()->{
+                                errorData.add(new XYChart.Data<>(iterationNr,backpropagation.getError()));
+                                errorSeries.getData().add(new XYChart.Data(iterationNr, backpropagation.getError()));
+                                iterationNr++;
+                             });
+                          }
+                       } while ((backpropagation.getError() > error)&&iterationNr<maxIteration);
+                       backpropagation.finishTraining();
+                       return null;
+                    }
+                 });
+         thread.setDaemon(true);
+         thread.start();
+
+         //
          currentTask.setOnSucceeded(ev -> {
             progressBar.progressProperty().unbind();
             progressBar.progressProperty().setValue(0.0);
             labelProgress.setText("Network trained.");
-            // test the neural network
-            for (NeuralDataPair pair : finalDataSet) {
+
+           /* //TODO
+            // test the neural for inputs network - I'm thinking to delete this
+            for (NeuralDataPair pair : dataSet) {
                final NeuralData output = network.compute(pair.getInput());
                double[] input = pair.getInput().getData();
                Text result = new Text( "Input array: "+Arrays.toString(input)
                        + ",\t  actual=" + output.getData(0) + ",\t ideal=" + pair.getIdeal().getData(0)+"\n");
 
                Platform.runLater(() -> textFlow.getChildren().add(result));
-            }
+            }*/
          });
          currentTask.setOnRunning(e -> {
             progressBar.progressProperty().bind(currentTask.progressProperty());
@@ -236,19 +236,15 @@ public class MainWindowController extends VBox implements Initializable{
          Encog.getInstance().shutdown();
       });
 
-
-
       bStop.setOnAction(event -> {
          if (currentTask != null) currentTask.cancel();
       });
 
       addRow.setOnAction(event->{
          rowNr++;
-         Row roww = new Row();
-         for(int i =0; i< actualDimensionChosen; i++)
-            roww.row.add(0);
-         tableList.add(roww);
-         Platform.runLater(()->testData.setItems(FXCollections.observableArrayList(tableList)));
+         Row newRow = new Row();
+
+         //we must enlarge static table XOR_STATIC_TEST
          double[][] XOR_STATIC_TEST_copy = XOR_STATIC_TEST;
          XOR_STATIC_TEST = new double[rowNr][actualDimensionChosen];
          for(int i=0; i< rowNr-1; i++){
@@ -257,8 +253,11 @@ public class MainWindowController extends VBox implements Initializable{
             }
          }
          for(int j=0; j< actualDimensionChosen; j++) {
-            XOR_STATIC_TEST[rowNr-1][j]=roww.row.get(j);
+            newRow.row.add(0);
+            XOR_STATIC_TEST[rowNr-1][j]=newRow.row.get(j);
          }
+         tableList.add(newRow);
+         Platform.runLater(() -> testData.setItems(FXCollections.observableArrayList(tableList)));
          testData.autosize();
       });
 
@@ -307,14 +306,12 @@ public class MainWindowController extends VBox implements Initializable{
          testData.autosize();
       });
 
-
       startTest.setOnAction(event -> {
          textFlow.getChildren().clear();
          for(int i=0; i< XOR_STATIC_TEST.length; i++) {
             NeuralData neuralData = network.compute(new BasicNeuralData(XOR_STATIC_TEST[i]));
-           textFlow.getChildren().add(new Text("Input: "+Arrays.toString(XOR_STATIC_TEST[i])+"\t output: "+neuralData.getData(0)+"\n"));
+           textFlow.getChildren().add(new Text("Input: "+Arrays.toString(XOR_STATIC_TEST[i])+"\t Output: "+neuralData.getData(0)+"\n"));
          }
-
       });
    }
 
