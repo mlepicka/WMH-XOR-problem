@@ -13,8 +13,8 @@
         <items>
             <VBox maxWidth="234.0" prefHeight="392.0" prefWidth="234.0">
                <children>
-                  <Label text="Learning method:" />
-                  <ChoiceBox fx:id="functions" prefHeight="40.0" prefWidth="234.0" />
+                  <Label text="Learning method: Back propagation" />
+
                   <Label text="Number of dimension of XOR problem:" />
                   <ChoiceBox fx:id="dimension" prefHeight="39.0" prefWidth="234.0" />
                   <Label text="Number of hidden layers in neural network:" />
