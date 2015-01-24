@@ -1,12 +1,18 @@
 package com.wmh;
 import javafx.application.Platform;
+import javafx.beans.property.SimpleStringProperty;
+import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
+import javafx.collections.ListChangeListener;
+import javafx.collections.ObservableList;
 import javafx.concurrent.Task;
+import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.chart.LineChart;
 import javafx.scene.chart.XYChart;
 import javafx.scene.control.*;
+import javafx.scene.control.cell.TextFieldTableCell;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Paint;
@@ -14,14 +20,17 @@ import javafx.scene.shape.Circle;
 import javafx.scene.text.Text;
 import javafx.scene.text.TextFlow;
 import javafx.stage.Stage;
+import javafx.util.Callback;
 import org.controlsfx.dialog.Dialogs;
 import org.encog.Encog;
 import org.encog.engine.network.activation.ActivationSigmoid;
 import org.encog.neural.data.NeuralData;
 import org.encog.neural.data.NeuralDataPair;
 import org.encog.neural.data.NeuralDataSet;
+import org.encog.neural.data.basic.BasicNeuralData;
 import org.encog.neural.data.basic.BasicNeuralDataSet;
 import org.encog.neural.networks.BasicNetwork;
+import org.encog.neural.networks.Network;
 import org.encog.neural.networks.layers.BasicLayer;
 import org.encog.neural.networks.training.propagation.back.Backpropagation;
 
@@ -55,22 +64,26 @@ public class MainWindowController extends VBox implements Initializable{
    @FXML Button addRow;
    @FXML Button startTest;
 
+   private List<Row> tableList = new ArrayList<>();
+
    int maxIteration;
    int iterationNr;
    double ratio;
    double moment;
    double error;
    int[] neuronNumber=new int[]{1};
-
+   int actualDimension;
+   Integer actualDimensionChosen;
+   double XOR_STATIC_TEST[][];
    private Task currentTask;
    private XYChart.Series errorSeries = new XYChart.Series();
    private List<XYChart.Data> errorData = new LinkedList<>();
    public MainWindowController(){}
+   int rowNr=1;
 
    @Override
    public void initialize(URL location, ResourceBundle resources) {
       //chartProgress.
-
 
       errorChart.setCreateSymbols(false);
       BasicNetwork network = new BasicNetwork();
@@ -80,7 +93,12 @@ public class MainWindowController extends VBox implements Initializable{
       //functions.getSelectionModel().select(0); //default value
       dimension.getSelectionModel().select(0);
       layers.getSelectionModel().select(0);
+      testData.editableProperty().setValue(true);
+      testData.getSelectionModel().cellSelectionEnabledProperty().setValue(true);
+      //Start button
       bStart.setOnAction(event -> {
+         testData.getColumns().clear();
+         tableList.clear();
          pane.getChildren().clear();
          iterationNr=0;
          try {
@@ -106,13 +124,13 @@ public class MainWindowController extends VBox implements Initializable{
          errorSeries.getData().clear();
          NeuralDataSet dataSet;
 
-         int actualDimension = (int)Math.pow(2,(Integer)dimension.getSelectionModel().getSelectedItem());
-
-         double XOR_STATIC[][] = new double[actualDimension][(Integer)dimension.getSelectionModel().getSelectedItem()];
+         actualDimension = (int)Math.pow(2,(Integer)dimension.getSelectionModel().getSelectedItem());
+         actualDimensionChosen = (Integer)dimension.getSelectionModel().getSelectedItem();
+         double XOR_STATIC[][] = new double[actualDimension][actualDimensionChosen];
          double XOR_STATIC_IDEAL[][] = new double[actualDimension][1];
          for(int i=0; i < actualDimension ; i++){
             int xor=0;
-            for (int j=0; j < (Integer)dimension.getSelectionModel().getSelectedItem(); j++){
+            for (int j=0; j < actualDimensionChosen; j++){
                Random random = new Random();
                Double value = random.nextDouble();
                if(value<0.5) value=0.0;
@@ -218,8 +236,89 @@ public class MainWindowController extends VBox implements Initializable{
          Encog.getInstance().shutdown();
       });
 
-         bStop.setOnAction(event -> {
-            if (currentTask != null) currentTask.cancel();
-         });
+
+
+      bStop.setOnAction(event -> {
+         if (currentTask != null) currentTask.cancel();
+      });
+
+      addRow.setOnAction(event->{
+         rowNr++;
+         Row roww = new Row();
+         for(int i =0; i< actualDimensionChosen; i++)
+            roww.row.add(0);
+         tableList.add(roww);
+         Platform.runLater(()->testData.setItems(FXCollections.observableArrayList(tableList)));
+         double[][] XOR_STATIC_TEST_copy = XOR_STATIC_TEST;
+         XOR_STATIC_TEST = new double[rowNr][actualDimensionChosen];
+         for(int i=0; i< rowNr-1; i++){
+            for(int j=0; j< actualDimensionChosen; j++){
+               XOR_STATIC_TEST[i][j] = XOR_STATIC_TEST_copy[i][j];
+            }
+         }
+         for(int j=0; j< actualDimensionChosen; j++) {
+            XOR_STATIC_TEST[rowNr-1][j]=roww.row.get(j);
+         }
+         testData.autosize();
+      });
+
+      generateData.setOnAction(event ->{
+         tableList.clear();
+         testData.getColumns().clear();
+         XOR_STATIC_TEST = new double[rowNr][actualDimensionChosen];
+         double XOR_STATIC_IDEAL[][] = new double[rowNr][1];
+         for(int i=0; i < rowNr ; i++){
+            int xor=0;
+            Row actRow = new Row();
+            for (int j=0; j < actualDimensionChosen; j++){
+               Random random = new Random();
+               Double value = random.nextDouble();
+               if(value<0.5) value=0.0;
+               else value = 1.0;
+               XOR_STATIC_TEST[i][j] = value;
+               if(j==0)xor=value.intValue();
+               if(j!=0)
+                  xor=xor^value.intValue();
+               actRow.row.add(value.intValue());
+            }
+            tableList.add(actRow);
+            XOR_STATIC_IDEAL[i][0] = xor;
+         }
+         for (int j=0; j < actualDimensionChosen; j++){
+            TableColumn<Row, String> col = new TableColumn(j+"");
+            final int finalJ = j;
+            col.setCellValueFactory(new Callback<TableColumn.CellDataFeatures<Row,String>,ObservableValue<String>>(){
+               @Override
+               public ObservableValue<String> call(TableColumn.CellDataFeatures<Row, String> param) {
+                  return new SimpleStringProperty(param.getValue().row.get(finalJ).toString());
+               }
+            });
+            col.setCellFactory(TextFieldTableCell.<Row>forTableColumn());
+            col.setOnEditCommit(new EventHandler<TableColumn.CellEditEvent<Row, String>>() {
+               @Override
+               public void handle(TableColumn.CellEditEvent<Row, String> event) {
+                  XOR_STATIC_TEST[event.getTablePosition().getRow()][event.getTablePosition().getColumn()]=Integer.parseInt(event.getNewValue());
+               }
+            });
+
+            testData.getColumns().addAll(col);
+         }
+         testData.setItems(FXCollections.observableArrayList(tableList));
+         testData.autosize();
+      });
+
+
+      startTest.setOnAction(event -> {
+         textFlow.getChildren().clear();
+         for(int i=0; i< XOR_STATIC_TEST.length; i++) {
+            NeuralData neuralData = network.compute(new BasicNeuralData(XOR_STATIC_TEST[i]));
+           textFlow.getChildren().add(new Text("Input: "+Arrays.toString(XOR_STATIC_TEST[i])+"\t output: "+neuralData.getData(0)+"\n"));
+         }
+
+      });
+   }
+
+   public class Row {
+      List<Integer> row = new ArrayList<>();
    }
 }

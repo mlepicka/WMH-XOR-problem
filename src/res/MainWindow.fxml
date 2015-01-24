@@ -61,24 +61,25 @@
                            </content>
                       </Tab>
                         <Tab text="Test network">
-                            <ScrollPane prefHeight="20.0" prefWidth="20.0">
-                            <content>
-                                <Pane fx:id="testPane" >
-                                 <children>
-                                    <TableView fx:id="testData" layoutX="14.0" layoutY="16.0" prefHeight="421.0" prefWidth="519.0">
-                                      <columns>
-                                        <TableColumn prefWidth="75.0" text="C1" />
-                                        <TableColumn prefWidth="75.0" text="C2" />
-                                      </columns>
+                           <content>
+                               <ScrollPane prefHeight="20.0" prefWidth="20.0">
+                               <content>
+                                   <Pane fx:id="testPane">
+                                    <children>
+                                       <TableView fx:id="testData" layoutX="119.0" layoutY="14.0" prefHeight="300.0" prefWidth="313.0">
+                                           <columnResizePolicy>
+                                               <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
+                                           </columnResizePolicy>
                                     </TableView>
-                                     <Button fx:id="addRow" layoutX="560.0" layoutY="55.0" mnemonicParsing="false" prefHeight="38.0" prefWidth="105.0" text="Add row" />
-                                     <Button fx:id="startTest" layoutX="560.0" layoutY="132.0" mnemonicParsing="false" prefHeight="38.0" prefWidth="105.0" text="Start test" />
-                                     <Button fx:id="generateData" layoutX="560.0" layoutY="94.0" mnemonicParsing="false" prefHeight="38.0" prefWidth="105.0" text="Generate data" />
-
-                                 </children>
-                                </Pane>
-                            </content>
-                            </ScrollPane>
+                                        <Button fx:id="addRow" layoutX="14.0" layoutY="14.0" mnemonicParsing="false" prefHeight="38.0" prefWidth="105.0" text="Add row" />
+                                        <Button fx:id="startTest" layoutX="14.0" layoutY="90.0" mnemonicParsing="false" prefHeight="38.0" prefWidth="105.0" text="Start test" />
+                                        <Button fx:id="generateData" layoutX="14.0" layoutY="52.0" mnemonicParsing="false" prefHeight="38.0" prefWidth="105.0" text="Generate data" />
+   
+                                    </children>
+                                   </Pane>
+                               </content>
+                               </ScrollPane>
+                           </content>
                         </Tab>
                     </tabs>
                   </TabPane>
