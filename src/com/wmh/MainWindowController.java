@@ -186,7 +186,7 @@ public class MainWindowController extends VBox implements Initializable{
          pane.getChildren().add(text);
       }
       for(int i=0; i< numberOfLayers; i++) {
-         network.addLayer(new BasicLayer(new ActivationSigmoid(), true, neuronNumber[i]));
+         //network.addLayer(new BasicLayer(new ActivationSigmoid(), true, neuronNumber[i]));
          for(int j=0; j<neuronNumber[i]; j++) {
             double X = pane.getLayoutX()+j*space+20;
             double Y = pane.getLayoutY()+i*space+20+space;
