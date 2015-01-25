@@ -69,7 +69,7 @@ public class MainWindowController extends VBox implements Initializable{
    private double moment;
    private double error;
    private int[] neuronNumber=new int[]{1};
-   private Integer actualDimension;
+   private Integer actualDimension=0;
    private double XOR_STATIC_TEST[][];
    private Task currentTask;
    private XYChart.Series errorSeries = new XYChart.Series();
@@ -96,10 +96,10 @@ public class MainWindowController extends VBox implements Initializable{
          setParameters();
          createTrainSet();
          createNetwork();
+         generateTestSet();
          drawStructure();
          trainAndDrawErrorChart();
          Encog.getInstance().shutdown();
-         System.out.println(network.getStructure().getLayers().size());
       });
 
       bStop.setOnAction(event -> {
@@ -299,6 +299,7 @@ public class MainWindowController extends VBox implements Initializable{
     */
    private void resetParameters(){
       //clearing variables
+      actualDimension=0;
       XOR_STATIC_TEST = new double[][]{};
       testData.getColumns().clear();
       rowList.clear();
@@ -311,10 +312,19 @@ public class MainWindowController extends VBox implements Initializable{
       iterationNr=0;
    }
 
+   private void isTrained(){
+      if(actualDimension.equals(0)){
+         Dialogs.create().owner(new Stage()).title("Error was occured").masthead("Network not trained")
+                 .message("Please train network first!").showError();
+         return;
+      }
+   }
+
    /**
     * Add row to test set
     */
    private void addRowToTestSet(){
+     isTrained();
       numberOfRowtoTest++;
       Row newRow = new Row();
       //we must enlarge static table XOR_STATIC_TEST
@@ -338,6 +348,7 @@ public class MainWindowController extends VBox implements Initializable{
     * Generate test set
     */
    private void generateTestSet(){
+      isTrained();
       rowList.clear();
       testData.getColumns().clear();
       XOR_STATIC_TEST = new double[numberOfRowtoTest][actualDimension];
@@ -359,6 +370,33 @@ public class MainWindowController extends VBox implements Initializable{
          rowList.add(actRow);
          XOR_STATIC_IDEAL[i][0] = xor;
       }
+      createTable();
+      testData.setItems(FXCollections.observableArrayList(rowList));
+      testData.autosize();
+   }
+
+   /**
+    * Test neural network for actual test set
+    */
+   private void testNetwork(){
+      //network.reset();
+      //network.clearContext();
+      isTrained();
+      textFlow.getChildren().clear();
+      for(int i=0; i< XOR_STATIC_TEST.length; i++) {
+         final int finalI = i;
+         Platform.runLater(()->{
+            NeuralData neuralData = network.compute(new BasicNeuralData(XOR_STATIC_TEST[finalI]));
+            textFlow.getChildren().add(new Text("Input: "+Arrays.toString(XOR_STATIC_TEST[finalI])+"\t Output: "+neuralData.getData(0)+"\n"
+            ));
+         });
+      }
+   }
+
+   /**
+    *
+    */
+   protected void createTable(){
       for (int j=0; j < actualDimension; j++){
          TableColumn<Row, String> col = new TableColumn<>(j+"");
          final int finalJ = j;
@@ -377,25 +415,6 @@ public class MainWindowController extends VBox implements Initializable{
          });
 
          testData.getColumns().addAll(col);
-      }
-      testData.setItems(FXCollections.observableArrayList(rowList));
-      testData.autosize();
-   }
-
-   /**
-    * Test neural network for actual test set
-    */
-   private void testNetwork(){
-      //network.reset();
-      //network.clearContext();
-      textFlow.getChildren().clear();
-      for(int i=0; i< XOR_STATIC_TEST.length; i++) {
-         final int finalI = i;
-         Platform.runLater(()->{
-            NeuralData neuralData = network.compute(new BasicNeuralData(XOR_STATIC_TEST[finalI]));
-            textFlow.getChildren().add(new Text("Input: "+Arrays.toString(XOR_STATIC_TEST[finalI])+"\t Output: "+neuralData.getData(0)+"\n"
-            ));
-         });
       }
    }
 }
