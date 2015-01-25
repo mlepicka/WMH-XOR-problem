@@ -4,20 +4,27 @@ import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.concurrent.Task;
+import javafx.embed.swing.SwingFXUtils;
 import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
+import javafx.scene.SnapshotParameters;
 import javafx.scene.chart.LineChart;
 import javafx.scene.chart.XYChart;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.TextFieldTableCell;
+import javafx.scene.image.WritableImage;
+import javafx.scene.input.MouseButton;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Paint;
 import javafx.scene.shape.Circle;
 import javafx.scene.text.Text;
 import javafx.scene.text.TextFlow;
+import javafx.stage.FileChooser;
 import javafx.stage.Stage;
+import javafx.stage.Window;
 import javafx.util.Callback;
 import org.controlsfx.dialog.Dialogs;
 import org.encog.Encog;
@@ -29,7 +36,10 @@ import org.encog.neural.data.basic.BasicNeuralDataSet;
 import org.encog.neural.networks.BasicNetwork;
 import org.encog.neural.networks.layers.BasicLayer;
 import org.encog.neural.networks.training.propagation.back.Backpropagation;
+import sun.plugin2.os.windows.Windows;
 
+import javax.imageio.ImageIO;
+import java.io.File;
 import java.net.URL;
 import java.util.*;
 
@@ -39,6 +49,7 @@ import java.util.*;
  */
 public class MainWindowController extends VBox implements Initializable{
 
+   Stage stage;
    @FXML ChoiceBox dimension;
    @FXML ChoiceBox layers;
    @FXML TextField neuronNumbers;
@@ -59,6 +70,7 @@ public class MainWindowController extends VBox implements Initializable{
    @FXML Button generateData;
    @FXML Button addRow;
    @FXML Button startTest;
+   @FXML Tab errorTab;
 
    private List<Row> rowList = new ArrayList<>();
    private NeuralDataSet dataSet;
@@ -76,10 +88,12 @@ public class MainWindowController extends VBox implements Initializable{
    private List<XYChart.Data> errorData = new LinkedList<>();
    private int numberOfRowtoTest =1;
    private int numberOfLayers;
-
+   private ContextMenu contextMenu = new ContextMenu();
 
    public MainWindowController(){}
-
+   public MainWindowController(Stage stage){
+      this.stage = stage;
+   }
    @Override
    public void initialize(URL location, ResourceBundle resources) {
       errorChart.setCreateSymbols(false);
@@ -89,6 +103,8 @@ public class MainWindowController extends VBox implements Initializable{
       layers.getSelectionModel().select(0);
       testData.editableProperty().setValue(true);
       testData.getSelectionModel().cellSelectionEnabledProperty().setValue(true);
+      MenuItem saveFile = new MenuItem("Save chart");
+      contextMenu.getItems().add(saveFile);
 
       //Start button action
       bStart.setOnAction(event -> {
@@ -116,6 +132,15 @@ public class MainWindowController extends VBox implements Initializable{
 
       startTest.setOnAction(event -> {
          testNetwork();
+      });
+
+      saveFile.setOnAction(ev->{
+         saveChart();
+      });
+      errorTab.setContextMenu(contextMenu);
+
+      errorChart.setOnContextMenuRequested(e->{
+         contextMenu.show(errorChart, e.getScreenX(), e.getScreenY());
       });
    }
 
@@ -185,7 +210,7 @@ public class MainWindowController extends VBox implements Initializable{
          }
       }
       catch(NumberFormatException ne){
-         Dialogs.create().owner(new Stage()).title("Error was occured").masthead("Wrong parameter").message("One of the parameters has a wrong value!\n"+ne.getMessage()).showError();
+         Dialogs.create().owner(stage).title("Error was occured").masthead("Wrong parameter").message("One of the parameters has a wrong value!\n"+ne.getMessage()).showError();
          return;
       }
    }
@@ -200,7 +225,7 @@ public class MainWindowController extends VBox implements Initializable{
       numberOfLayers = (Integer)layers.getSelectionModel().getSelectedItem();
 
       if(neuronNumber.length < numberOfLayers){
-         Dialogs.create().owner(new Stage()).title("Error was occured").masthead("Wrong parameters")
+         Dialogs.create().owner(stage).title("Error was occured").masthead("Wrong parameters")
                  .message("Please enter valid number of neuron for each of hidden layer\n"+
                          "For example: 1,2,1 for 3 hidden layer").showError();
          return;
@@ -314,7 +339,7 @@ public class MainWindowController extends VBox implements Initializable{
 
    private void isTrained(){
       if(actualDimension.equals(0)){
-         Dialogs.create().owner(new Stage()).title("Error was occured").masthead("Network not trained")
+         Dialogs.create().owner(stage).title("Error was occured").masthead("Network not trained")
                  .message("Please train network first!").showError();
          return;
       }
@@ -416,5 +441,38 @@ public class MainWindowController extends VBox implements Initializable{
 
          testData.getColumns().addAll(col);
       }
+   }
+
+   /**
+    * Saving chart as png file
+    */
+   protected void saveChart(){
+      final FileChooser fileChooser = new FileChooser();
+      fileChooser.setInitialFileName("wykres1.png");
+      fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Image","png"));
+      File file = fileChooser.showSaveDialog(stage);
+      Task task = new Task<Void>() {
+         @Override
+         public Void call() {
+
+            Platform.runLater(
+                    new Runnable() {
+                       public void run() {
+                          try {
+                             WritableImage wim = new WritableImage( (int)errorChart.getWidth(), (int)errorChart.getHeight());
+                             errorChart.snapshot(new SnapshotParameters(), wim);
+                             ImageIO.write(SwingFXUtils.fromFXImage(wim, null), "png", file);
+                          } catch (Exception s) {
+                          }
+                       }
+                    });
+
+            return null;
+         }
+      };
+
+      Thread th = new Thread(task);
+      th.start();
+
    }
 }

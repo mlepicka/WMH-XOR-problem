@@ -41,9 +41,9 @@
             </VBox>
             <SplitPane dividerPositions="0.7831632653061225" orientation="VERTICAL" prefHeight="392.0" prefWidth="551.0">
               <items>
-                  <TabPane prefHeight="200.0" prefWidth="200.0" tabClosingPolicy="UNAVAILABLE">
+                  <TabPane prefHeight="461.0" prefWidth="766.0" tabClosingPolicy="UNAVAILABLE">
                     <tabs>
-                      <Tab text="Learning error chart">
+                      <Tab fx:id="errorTab" text="Learning error chart">
                            <content>
                               <LineChart fx:id="errorChart">
                                 <xAxis>

@@ -12,7 +12,7 @@ public class Main extends Application{
 
     @Override
     public void start(Stage stage) throws Exception {
-
+        mainWindowController = new MainWindowController(stage);
         FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("../../res/MainWindow.fxml"));
         fxmlLoader.setRoot(mainWindowController);
         try {
