@@ -13,6 +13,7 @@ import javafx.scene.chart.LineChart;
 import javafx.scene.chart.XYChart;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.TextFieldTableCell;
+import javafx.scene.image.ImageView;
 import javafx.scene.image.WritableImage;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
@@ -89,6 +90,7 @@ public class MainWindowController extends VBox implements Initializable{
    private int numberOfRowtoTest =1;
    private int numberOfLayers;
    private ContextMenu contextMenu = new ContextMenu();
+   private int space = 100;
 
    public MainWindowController(){}
    public MainWindowController(Stage stage){
@@ -142,6 +144,20 @@ public class MainWindowController extends VBox implements Initializable{
       errorChart.setOnContextMenuRequested(e->{
          contextMenu.show(errorChart, e.getScreenX(), e.getScreenY());
       });
+
+      errorChart.getXAxis().setLabel("Iteration number");
+      errorChart.getYAxis().setLabel("Error value");
+      errorChart.setLegendVisible(false);
+
+      pane.setOnContextMenuRequested(ev -> {
+         ContextMenu cmenu = new ContextMenu();
+         MenuItem mItem = new MenuItem("Save structure");
+         cmenu.getItems().add(mItem);
+         mItem.setOnAction(e -> {
+            saveStructure();
+         });
+         cmenu.show(pane, ev.getScreenX(), ev.getScreenY());
+      });
    }
 
    /**
@@ -158,11 +174,12 @@ public class MainWindowController extends VBox implements Initializable{
       //draw structure of neural network
       Circle circle;
       Text text;
+
       for(int j=0; j<= actualDimension; j++) {
-         circle = new Circle(pane.getLayoutX() + 20+j*50, pane.getLayoutY() + 20, 15);
+         circle = new Circle(pane.getLayoutX() + 20+j*space, pane.getLayoutY() + 20, 15);
          text = new Text("I: "+j);
          text.setY(pane.getLayoutY()+23);
-         text.setX(pane.getLayoutX()+14+j*50);
+         text.setX(pane.getLayoutX()+14+j*space);
          circle.fillProperty().setValue(Paint.valueOf("white"));
          circle.strokeProperty().setValue(Paint.valueOf("black"));
          pane.getChildren().add(circle);
@@ -171,8 +188,8 @@ public class MainWindowController extends VBox implements Initializable{
       for(int i=0; i< numberOfLayers; i++) {
          network.addLayer(new BasicLayer(new ActivationSigmoid(), true, neuronNumber[i]));
          for(int j=0; j<neuronNumber[i]; j++) {
-            double X = pane.getLayoutX()+j*50+20;
-            double Y = pane.getLayoutY()+i*50+70;
+            double X = pane.getLayoutX()+j*space+20;
+            double Y = pane.getLayoutY()+i*space+20+space;
             circle = new Circle(X, Y, 15);
             circle.fillProperty().setValue(Paint.valueOf("white"));
             circle.strokeProperty().setValue(Paint.valueOf("black"));
@@ -183,9 +200,9 @@ public class MainWindowController extends VBox implements Initializable{
             pane.getChildren().add(text);
          }
       }
-      circle = new Circle(pane.getLayoutX() + 20, pane.getLayoutY() + numberOfLayers *50+70, 15);
+      circle = new Circle(pane.getLayoutX() + 20, pane.getLayoutY() + numberOfLayers *space+20+space, 15);
       text = new Text("O");
-      text.setY(pane.getLayoutY() + numberOfLayers *50+73);
+      text.setY(pane.getLayoutY() + numberOfLayers *space+23+space);
       text.setX(pane.getLayoutX()+14);
       circle.fillProperty().setValue(Paint.valueOf("white"));
       circle.strokeProperty().setValue(Paint.valueOf("black"));
@@ -473,6 +490,37 @@ public class MainWindowController extends VBox implements Initializable{
 
       Thread th = new Thread(task);
       th.start();
+   }
 
+   /**
+    * Saving chart as png file
+    */
+   protected void saveStructure(){
+      final FileChooser fileChooser = new FileChooser();
+      fileChooser.setInitialFileName("structure1.png");
+      fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Image","png"));
+      File file = fileChooser.showSaveDialog(stage);
+      Task task = new Task<Void>() {
+         @Override
+         public Void call() {
+
+            Platform.runLater(
+                    new Runnable() {
+                       public void run() {
+                          try {
+                             WritableImage wim = new WritableImage( (int)pane.getWidth(), (int)pane.getHeight());
+                            pane.snapshot(new SnapshotParameters(), wim);
+                             ImageIO.write(SwingFXUtils.fromFXImage(wim, null), "png", file);
+                          } catch (Exception s) {
+                          }
+                       }
+                    });
+
+            return null;
+         }
+      };
+
+      Thread th = new Thread(task);
+      th.start();
    }
 }
