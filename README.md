@@ -1,4 +1,4 @@
 WMH-XOR-problem
 ===============
 
-Additional libriaries: Encog core 2.5.3
+Additional libriaries: Encog core 3.0.0
