@@ -1,4 +1,5 @@
 package com.wmh;
+
 import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.value.ObservableValue;
@@ -13,10 +14,7 @@ import javafx.scene.chart.LineChart;
 import javafx.scene.chart.XYChart;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.TextFieldTableCell;
-import javafx.scene.image.ImageView;
 import javafx.scene.image.WritableImage;
-import javafx.scene.input.MouseButton;
-import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Paint;
@@ -25,7 +23,6 @@ import javafx.scene.text.Text;
 import javafx.scene.text.TextFlow;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
-import javafx.stage.Window;
 import javafx.util.Callback;
 import org.controlsfx.dialog.Dialogs;
 import org.encog.Encog;
@@ -37,7 +34,6 @@ import org.encog.neural.data.basic.BasicNeuralDataSet;
 import org.encog.neural.networks.BasicNetwork;
 import org.encog.neural.networks.layers.BasicLayer;
 import org.encog.neural.networks.training.propagation.back.Backpropagation;
-import sun.plugin2.os.windows.Windows;
 
 import javax.imageio.ImageIO;
 import java.io.File;
@@ -84,6 +80,7 @@ public class MainWindowController extends VBox implements Initializable{
    private int[] neuronNumber=new int[]{1};
    private Integer actualDimension=0;
    private double XOR_STATIC_TEST[][];
+   private double XOR_STATIC_IDEAL[][];
    private Task currentTask;
    private XYChart.Series errorSeries = new XYChart.Series();
    private List<XYChart.Data> errorData = new LinkedList<>();
@@ -175,11 +172,11 @@ public class MainWindowController extends VBox implements Initializable{
       Circle circle;
       Text text;
 
-      for(int j=0; j<= actualDimension; j++) {
+      for(int j=0; j< actualDimension; j++) {
          circle = new Circle(pane.getLayoutX() + 20+j*space, pane.getLayoutY() + 20, 15);
          text = new Text("I: "+j);
          text.setY(pane.getLayoutY()+23);
-         text.setX(pane.getLayoutX()+14+j*space);
+         text.setX(pane.getLayoutX()+13+j*space);
          circle.fillProperty().setValue(Paint.valueOf("white"));
          circle.strokeProperty().setValue(Paint.valueOf("black"));
          pane.getChildren().add(circle);
@@ -193,7 +190,7 @@ public class MainWindowController extends VBox implements Initializable{
             circle = new Circle(X, Y, 15);
             circle.fillProperty().setValue(Paint.valueOf("white"));
             circle.strokeProperty().setValue(Paint.valueOf("black"));
-            text = new Text(i+": "+j);
+            text = new Text(i+":"+j);
             text.setX(X-7);
             text.setY(Y+3);
             pane.getChildren().add(circle);
@@ -282,7 +279,7 @@ public class MainWindowController extends VBox implements Initializable{
          }
 
          XOR_STATIC_IDEAL[i][0] = xor;
-         System.out.println("CHECk"+Arrays.toString(XOR_STATIC_IDEAL[i])+" "+Arrays.toString(XOR_STATIC[i]));
+         System.out.println("CHECk" + Arrays.toString(XOR_STATIC_IDEAL[i]) + " " + Arrays.toString(XOR_STATIC[i]));
       }
 
       dataSet = new BasicNeuralDataSet(XOR_STATIC, XOR_STATIC_IDEAL);
@@ -393,25 +390,26 @@ public class MainWindowController extends VBox implements Initializable{
       isTrained();
       rowList.clear();
       testData.getColumns().clear();
+
+      numberOfRowtoTest = (int) Math.pow(2, actualDimension);
       XOR_STATIC_TEST = new double[numberOfRowtoTest][actualDimension];
-      double XOR_STATIC_IDEAL[][] = new double[numberOfRowtoTest][1];
+      XOR_STATIC_IDEAL = new double[numberOfRowtoTest][1];
+
       for(int i=0; i < numberOfRowtoTest; i++){
-         int xor=0;
+
+         int xorSum=0;
          Row actRow = new Row();
-         for (int j=0; j < actualDimension; j++){
-            Random random = new Random();
-            Double value = random.nextDouble();
-            if(value<0.5) value=0.0;
-            else value = 1.0;
-            XOR_STATIC_TEST[i][j] = value;
-            if(j==0)xor=value.intValue();
-            if(j!=0)
-               xor=xor^value.intValue();
-            actRow.row.add(value.intValue());
+         for (int j = actualDimension-1; j >= 0; j--){
+            int bit = ((i & (1 << j)) != 0) ? 1 : 0;
+            xorSum += bit;
+            XOR_STATIC_TEST[i][(actualDimension-1)-j] = bit;
+            actRow.row.add(bit);
          }
+
+         XOR_STATIC_IDEAL[i][0] = (xorSum % 2) == 1 ? 1 : 0;
          rowList.add(actRow);
-         XOR_STATIC_IDEAL[i][0] = xor;
       }
+
       createTable();
       testData.setItems(FXCollections.observableArrayList(rowList));
       testData.autosize();
@@ -425,11 +423,14 @@ public class MainWindowController extends VBox implements Initializable{
       //network.clearContext();
       isTrained();
       textFlow.getChildren().clear();
+      int correctNo = 0;
       for(int i=0; i< XOR_STATIC_TEST.length; i++) {
          final int finalI = i;
          Platform.runLater(()->{
             NeuralData neuralData = network.compute(new BasicNeuralData(XOR_STATIC_TEST[finalI]));
-            textFlow.getChildren().add(new Text("Input: "+Arrays.toString(XOR_STATIC_TEST[finalI])+"\t Output: "+neuralData.getData(0)+"\n"
+            double output = neuralData.getData(0);
+            boolean correct = ((int)(output+0.5)) == XOR_STATIC_IDEAL[finalI][0];
+            textFlow.getChildren().add(new Text("Input: "+Arrays.toString(XOR_STATIC_TEST[finalI])+"\t Output: "+output+ "\t OutputRounded: " + (int)(output+0.5) + "\t Ideal: " + XOR_STATIC_IDEAL[finalI][0] + " -> " + (correct ? "OK" : "WRONG") +"\n"
             ));
          });
       }
