@@ -28,7 +28,7 @@ import javafx.util.Callback;
 import org.controlsfx.dialog.Dialogs;
 import org.encog.Encog;
 import org.encog.engine.network.activation.ActivationSigmoid;
-import org.encog.neural.data.NeuralData;
+import org.encog.ml.data.MLData;
 import org.encog.neural.data.NeuralDataSet;
 import org.encog.neural.data.basic.BasicNeuralData;
 import org.encog.neural.data.basic.BasicNeuralDataSet;
@@ -171,6 +171,7 @@ public class MainWindowController extends VBox implements Initializable{
    private void drawStructure(){
       Circle circle;
       Text text;
+      Text weightText;
       Line line;
 
       // input neurons
@@ -185,9 +186,17 @@ public class MainWindowController extends VBox implements Initializable{
             double endX = pane.getLayoutX()+i*space+20;
             double endY = pane.getLayoutY()+20+space;
 
+            // weight text
+//            double weight = Math.round(network.getWeight(0, j, i));
+//            weightText = new Text(Double.toString(weight));
+//            weightText.setX(x + (endX - x)*0.3 );
+//            weightText.setY(y + (endY - y)*0.3 );
+//            weightText.setFill(Color.DEEPPINK);
+
             line = new Line(x, y, endX, endY);
             line.strokeProperty().setValue(Paint.valueOf("black"));
             pane.getChildren().add(line);
+//            pane.getChildren().add(weightText);
          }
 
          circle = new Circle(x, y, 15);
@@ -215,6 +224,15 @@ public class MainWindowController extends VBox implements Initializable{
                   line = new Line(X, Y, endX, endY);
                   line.strokeProperty().setValue(Paint.valueOf("black"));
                   pane.getChildren().add(line);
+
+                  //System.out.println("Pobieram wagę dla: " + i + " " + j + " " + k);
+//                  double weight = Math.round(network.getWeight(i, j, k));
+//                  weightText = new Text(Double.toString(weight));
+//                  weightText.setX(X + (endX - X)*0.3 );
+//                  weightText.setY(Y + (endY - Y)*0.3 );
+//                  weightText.setFill(Color.DEEPPINK);
+//
+//                  pane.getChildren().add(weightText);
                }
             }
             else
@@ -386,7 +404,7 @@ public class MainWindowController extends VBox implements Initializable{
       rowList.clear();
       pane.getChildren().clear();
       errorData.clear();
-      network.clearContext();
+      network = new BasicNetwork();
       errorChart.getData().clear();
       errorSeries.getData().clear();
       textFlow.getChildren().clear();
@@ -469,8 +487,9 @@ public class MainWindowController extends VBox implements Initializable{
       for(int i=0; i< XOR_STATIC_TEST.length; i++) {
          final int finalI = i;
          Platform.runLater(()->{
-            NeuralData neuralData = network.compute(new BasicNeuralData(XOR_STATIC_TEST[finalI]));
-            double output = neuralData.getData(0);
+            //NeuralData neuralData = network.compute(new BasicNeuralData(XOR_STATIC_TEST[finalI]));
+            MLData mlData = network.compute(new BasicNeuralData(XOR_STATIC_TEST[finalI]));
+            double output = mlData.getData(0);
             boolean correct = ((int)(output+0.5)) == XOR_STATIC_IDEAL[finalI][0];
             textFlow.getChildren().add(new Text("Input: "+Arrays.toString(XOR_STATIC_TEST[finalI])+"\t Output: "+output+ "\t OutputRounded: " + (int)(output+0.5) + "\t Ideal: " + XOR_STATIC_IDEAL[finalI][0] + " -> " + (correct ? "OK" : "WRONG") +"\n"
             ));
