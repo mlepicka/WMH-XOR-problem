@@ -19,6 +19,7 @@ import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Paint;
 import javafx.scene.shape.Circle;
+import javafx.scene.shape.Line;
 import javafx.scene.text.Text;
 import javafx.scene.text.TextFlow;
 import javafx.stage.FileChooser;
@@ -168,13 +169,29 @@ public class MainWindowController extends VBox implements Initializable{
     * Drawing structure of neural network
     */
    private void drawStructure(){
-      //draw structure of neural network
       Circle circle;
       Text text;
+      Line line;
 
+      // input neurons
       for(int j=0; j< actualDimension; j++) {
-         circle = new Circle(pane.getLayoutX() + 20+j*space, pane.getLayoutY() + 20, 15);
-         text = new Text("I: "+j);
+
+         double x = pane.getLayoutX() + 20+j*space;
+         double y = pane.getLayoutY() + 20;
+
+         // drawing input to first layer links
+         for(int i=0; i<neuronNumber[0]; i++)
+         {
+            double endX = pane.getLayoutX()+i*space+20;
+            double endY = pane.getLayoutY()+20+space;
+
+            line = new Line(x, y, endX, endY);
+            line.strokeProperty().setValue(Paint.valueOf("black"));
+            pane.getChildren().add(line);
+         }
+
+         circle = new Circle(x, y, 15);
+         text = new Text("I:"+j);
          text.setY(pane.getLayoutY()+23);
          text.setX(pane.getLayoutX()+13+j*space);
          circle.fillProperty().setValue(Paint.valueOf("white"));
@@ -182,11 +199,34 @@ public class MainWindowController extends VBox implements Initializable{
          pane.getChildren().add(circle);
          pane.getChildren().add(text);
       }
+
+      // hidden layer neurons
       for(int i=0; i< numberOfLayers; i++) {
-         //network.addLayer(new BasicLayer(new ActivationSigmoid(), true, neuronNumber[i]));
          for(int j=0; j<neuronNumber[i]; j++) {
             double X = pane.getLayoutX()+j*space+20;
             double Y = pane.getLayoutY()+i*space+20+space;
+
+            if(neuronNumber.length > i+1) {
+               // links to next layer neurons
+               for (int k = 0; k < neuronNumber[i + 1]; k++) {
+                  double endX = pane.getLayoutX()+k*space+20;
+                  double endY = pane.getLayoutY()+(i+1)*space+20+space;
+
+                  line = new Line(X, Y, endX, endY);
+                  line.strokeProperty().setValue(Paint.valueOf("black"));
+                  pane.getChildren().add(line);
+               }
+            }
+            else
+            {
+               double endX = pane.getLayoutX() + 20;
+               double endY = pane.getLayoutY() + numberOfLayers *space+20+space;
+
+               line = new Line(X, Y, endX, endY);
+               line.strokeProperty().setValue(Paint.valueOf("black"));
+               pane.getChildren().add(line);
+            }
+
             circle = new Circle(X, Y, 15);
             circle.fillProperty().setValue(Paint.valueOf("white"));
             circle.strokeProperty().setValue(Paint.valueOf("black"));
@@ -197,6 +237,8 @@ public class MainWindowController extends VBox implements Initializable{
             pane.getChildren().add(text);
          }
       }
+
+      // output neuron
       circle = new Circle(pane.getLayoutX() + 20, pane.getLayoutY() + numberOfLayers *space+20+space, 15);
       text = new Text("O");
       text.setY(pane.getLayoutY() + numberOfLayers *space+23+space);
@@ -286,7 +328,7 @@ public class MainWindowController extends VBox implements Initializable{
    }
 
    /**
-    * Train and drwa learning error chart
+    * Train and draw learning error chart
     */
    private void trainAndDrawErrorChart(){
       errorSeries.setName("Error");
