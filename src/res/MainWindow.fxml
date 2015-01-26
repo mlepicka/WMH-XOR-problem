@@ -57,7 +57,11 @@
                         </Tab>
                       <Tab fx:id="structure" text="Structure">
                            <content>
-                              <Pane fx:id="pane" prefHeight="200.0" prefWidth="200.0" />
+                          <ScrollPane prefHeight="20.0" prefWidth="20.0">
+                          <content>
+                              <Pane fx:id="pane" />
+                              </content>
+                               </ScrollPane>
                            </content>
                       </Tab>
                         <Tab text="Test network">
