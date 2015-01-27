@@ -483,17 +483,29 @@ public class MainWindowController extends VBox implements Initializable{
       //network.clearContext();
       isTrained();
       textFlow.getChildren().clear();
+      List<String> strings = new ArrayList<String>();
       int correctNo = 0;
       for(int i=0; i< XOR_STATIC_TEST.length; i++) {
          final int finalI = i;
-         Platform.runLater(()->{
+//         Platform.runLater(()->{
             //NeuralData neuralData = network.compute(new BasicNeuralData(XOR_STATIC_TEST[finalI]));
             MLData mlData = network.compute(new BasicNeuralData(XOR_STATIC_TEST[finalI]));
             double output = mlData.getData(0);
             boolean correct = ((int)(output+0.5)) == XOR_STATIC_IDEAL[finalI][0];
-            textFlow.getChildren().add(new Text("Input: "+Arrays.toString(XOR_STATIC_TEST[finalI])+"\t Output: "+output+ "\t OutputRounded: " + (int)(output+0.5) + "\t Ideal: " + XOR_STATIC_IDEAL[finalI][0] + " -> " + (correct ? "OK" : "WRONG") +"\n"
-            ));
-         });
+
+            if(correct)
+               correctNo++;
+
+            String text = "Input: "+Arrays.toString(XOR_STATIC_TEST[finalI])+"\t Output: "+output+ "\t OutputRounded: " + (int)(output+0.5) + "\t Ideal: " + XOR_STATIC_IDEAL[finalI][0] + " -> " + (correct ? "OK" : "WRONG") +"\n";
+            strings.add(text);
+            //textFlow.getChildren().add(new Text("Input: "+Arrays.toString(XOR_STATIC_TEST[finalI])+"\t Output: "+output+ "\t OutputRounded: " + (int)(output+0.5) + "\t Ideal: " + XOR_STATIC_IDEAL[finalI][0] + " -> " + (correct ? "OK" : "WRONG") +"\n"));
+//         });
+      }
+
+      textFlow.getChildren().add(new Text("Overall quality: " + (((double)correctNo*100)/(double)XOR_STATIC_TEST.length) + ", ErrorNo: " + (XOR_STATIC_TEST.length-correctNo) + "\n"));
+      for(String s : strings)
+      {
+         textFlow.getChildren().add(new Text(s));
       }
    }
 
